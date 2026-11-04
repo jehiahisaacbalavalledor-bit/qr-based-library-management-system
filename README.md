@@ -1,67 +1,29 @@
 # QR-Based Library Book Borrowing Management System
 ### Cavite State University - Imus Campus (CvSU)
-**Project Status:** Milestone 1 — 20% Minimum System Requirement Deliverable
+**Project Status:** Complete Multi-Milestone Integrated System (20% to 100%)
 
 ---
 
-## 🎯 20% Milestone Scope & Deliverables
-This submission satisfies the **20% Phase 1 Minimum System Requirement** focusing on the **Student Authentication & Account Registration Module**:
+## 🎯 Capstone Development Roadmap & Deliverables
 
-1. **Sign In Page (`index.html` / `login.html`)**:
-   - Replicated from Reference Image 1.
-   - CvSU - Imus Campus branding and official Student Portal circuit emblem.
-   - Inputs: `Student Number *` and `Password *`.
-   - Centered `Forgot Password?` link.
-   - Green `Sign In` button.
-   - `Don't have an account yet? Register here` link.
-   - Footer: `? Support | Walkthrough` modal guides.
-
-2. **Account Registration Page (`register.html`)**:
-   - Replicated from Reference Image 2.
-   - Header divider and `Account Registration` title.
-   - Inputs in exact order:
-     - `Student Number *`
-     - `Email Address *`
-     - `Mobile Number *` with centered hint `Format: 11 digit number (09XXXXXXXXX)`
-     - `Date of Birth *` (`mm/dd/yyyy`)
-     - `Password *`
-     - `Confirm Password *`
-   - Green `Register` button.
-   - `Already have an account ? Sign in here` link.
-   - Footer: `? Portal Guide` modal.
-
-3. **Prototype Dashboard & QR Pass (`dashboard.html`)**:
-   - Demonstrates successful authentication and registration.
-   - Generates the student's unique **Digital QR ID Pass** preview.
-   - Displays a 20% Progress Bar and a Defense Roadmap for the panel.
-
-4. **Lightweight Backend / API (20% Scope)**:
-   - `api/login.php`: Validates credentials.
-   - `api/register.php`: Registers students.
-   - `database/schema.sql`: Single `students` table schema for Phase 1.
-   - Works in **Dual Mode**: runs directly in browser (`file://`) or on XAMPP/Apache with MySQL.
+| Milestone | Scope | Modules Delivered | Status |
+| :---: | :--- | :--- | :---: |
+| **20%** | **Phase 1: Student Authentication & Registration** | Sign In, Registration, CvSU Validation, Student QR ID Pass | **COMPLETED** |
+| **40%** | **Phase 2: Library Book Inventory & Catalog Search** | Live Keyword Search, Category Filters, Real-Time Stock Status | **COMPLETED** |
+| **60%** | **Phase 3: QR Scanner & Circulation Desk** | QR Token Validation, Instant Book Checkout Kiosk, Loan Issue | **COMPLETED** |
+| **80%** | **Phase 4: Due Date Tracking & Penalty Computation** | Active Loans Tracker, Due Date Countdown, ₱10/day Overdue Calculation, 1-Click Return | **COMPLETED** |
+| **100%** | **Phase 5: Librarian Analytics, Audit Logs & Reports** | Live KPI Counters, Audit Trail, Printable Circulation Report Slip | **COMPLETED** |
 
 ---
 
-## 🗺️ Capstone Development Roadmap (For Defense Panel)
-
-| Milestone | Scope | Status |
-| :---: | :--- | :---: |
-| **20%** | **Phase 1: Student Authentication & Registration (UI, Validation, QR ID Pass)** | **COMPLETED (Current)** |
-| **40%** | Phase 2: Library Book Inventory & Catalog Search | Upcoming |
-| **60%** | Phase 3: QR Scanner & Circulation Desk (Borrow & Return Workflow) | Upcoming |
-| **80%** | Phase 4: Due Date Tracking, SMS Alerts & Overdue Penalty Computation | Upcoming |
-| **100%** | Phase 5: Librarian Analytics, Reports & Final Campus Rollout | Upcoming |
-
----
-
-## 🚀 How to Run the 20% Prototype
+## 🚀 How to Run the System
 
 ### Option 1: Direct Browser Launch (No installation required)
 - Double-click **`index.html`** in your browser.
-- Use the quick **Auto-fill** button or demo credentials:
+- Use demo credentials:
   - **Student Number:** `202410001`
   - **Password:** `Password123!`
+- Once in `dashboard.html`, use the interactive **Milestone Controller** at the top to filter and test any milestone from 20% to 100% live.
 
 ### Option 2: Live Server / XAMPP
 ```powershell
@@ -69,3 +31,8 @@ This submission satisfies the **20% Phase 1 Minimum System Requirement** focusin
 php -S localhost:8000
 ```
 Then visit `http://localhost:8000` in your browser.
+
+---
+
+## 🗄️ Database
+- Database schema and seed data for all milestones are located in `database/schema.sql`.
