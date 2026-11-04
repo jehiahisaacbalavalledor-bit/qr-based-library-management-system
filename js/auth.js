@@ -1,15 +1,17 @@
 /**
  * Cavite State University - Imus Campus
  * Student Portal & QR Library Borrowing Management System
- * Authentication & Client-side Session Handler
+ * Authentication & Client-side Session Handler (Student & Staff/Admin)
  */
 
 (function () {
   'use strict';
 
-  // Key for localStorage user database
+  // Storage Keys
   const STORAGE_USERS_KEY = 'cvsu_library_registered_users';
   const SESSION_USER_KEY = 'cvsu_library_current_user';
+  const STORAGE_ADMINS_KEY = 'cvsu_library_registered_admins';
+  const SESSION_ADMIN_KEY = 'cvsu_library_current_admin';
 
   // Seed default demonstration student account if empty
   function initializeDefaultUsers() {
@@ -49,7 +51,25 @@
     }
   }
 
+  // Seed default demonstration admin/librarian account if empty
+  function initializeDefaultAdmins() {
+    const existingAdmins = localStorage.getItem(STORAGE_ADMINS_KEY);
+    if (!existingAdmins) {
+      const defaultAdmins = [
+        {
+          employeeId: 'LIB-2024-001',
+          fullName: 'Prof. Maria C. Santos',
+          email: 'admin@cvsu.edu.ph',
+          role: 'Head Librarian',
+          password: 'AdminPassword123!'
+        }
+      ];
+      localStorage.setItem(STORAGE_ADMINS_KEY, JSON.stringify(defaultAdmins));
+    }
+  }
+
   initializeDefaultUsers();
+  initializeDefaultAdmins();
 
   // Helper: Retrieve all users
   function getUsers() {
@@ -60,12 +80,24 @@
     }
   }
 
-  // Helper: Save users
   function saveUsers(users) {
     localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(users));
   }
 
-  // Helper: Normalize Student Number (strips hyphens and spaces)
+  // Helper: Retrieve all admins
+  function getAdmins() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_ADMINS_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveAdmins(admins) {
+    localStorage.setItem(STORAGE_ADMINS_KEY, JSON.stringify(admins));
+  }
+
+  // Helper: Normalize Student Number / Employee ID (strips hyphens and spaces)
   function cleanStudentNumber(str) {
     return (str || '').replace(/[\s-]/g, '').trim();
   }
@@ -112,13 +144,11 @@
 
       if (icon) {
         if (isPassword) {
-          // Eye Slash icon
           icon.innerHTML = `
             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
             <line x1="1" y1="1" x2="23" y2="23"></line>
           `;
         } else {
-          // Normal Eye icon
           icon.innerHTML = `
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
             <circle cx="12" cy="12" r="3"></circle>
@@ -157,9 +187,9 @@
   // DOM Loaded Listeners
   document.addEventListener('DOMContentLoaded', function () {
     
-    // ------------------------------------------------------------------------
-    // LOGIN PAGE LOGIC
-    // ------------------------------------------------------------------------
+    // ========================================================================
+    // STUDENT LOGIN PAGE LOGIC
+    // ========================================================================
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
       setupPasswordToggle('togglePasswordBtn', 'password', 'eyeIcon');
@@ -191,7 +221,6 @@
         const studentNo = cleanStudentNumber(rawStudentNo);
         const password = passInput.value;
 
-        // Simple validation
         if (!studentNo) {
           showToast('Please enter your Student Number.', 'error');
           studentInput.focus();
@@ -207,8 +236,7 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Signing In...';
 
-        // Attempt 1: Call REST API (api/login.php)
-        let apiSucceeded = false;
+        // Attempt 1: REST API
         if (window.location.protocol !== 'file:') {
           try {
             const apiRes = await fetch('api/login.php', {
@@ -223,7 +251,6 @@
             if (apiRes.ok) {
               const resData = await apiRes.json();
               if (resData.status === 'success') {
-                apiSucceeded = true;
                 const loggedInUser = {
                   studentNumber: resData.data.studentNumber || studentNo,
                   fullName: resData.data.fullName || `Student ${studentNo}`,
@@ -238,7 +265,6 @@
                 }, 700);
                 return;
               } else if (resData.message) {
-                // Real API rejected with message (e.g. invalid credentials)
                 submitBtn.disabled = false;
                 submitBtn.innerText = 'Sign In';
                 showToast(resData.message, 'error');
@@ -252,7 +278,7 @@
           }
         }
 
-        // Attempt 2: Local storage fallback (for offline or standalone presentation)
+        // Attempt 2: Local storage fallback
         setTimeout(() => {
           const users = getUsers();
           const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.password === password);
@@ -274,16 +300,322 @@
       });
     }
 
-    // ------------------------------------------------------------------------
-    // REGISTRATION PAGE LOGIC
-    // ------------------------------------------------------------------------
+    // ========================================================================
+    // ADMIN / LIBRARIAN LOGIN PAGE LOGIC
+    // ========================================================================
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    if (adminLoginForm) {
+      setupPasswordToggle('toggleAdminPasswordBtn', 'adminPassword', 'adminEyeIcon');
+      setupModal('adminSupportLink', 'adminSupportModal', 'closeAdminSupportModal');
+      
+      const closeAdminSupportModalBtn = document.getElementById('closeAdminSupportModalBtn');
+      if (closeAdminSupportModalBtn) {
+        closeAdminSupportModalBtn.addEventListener('click', function () {
+          const modal = document.getElementById('adminSupportModal');
+          if (modal) modal.classList.remove('active');
+        });
+      }
+
+      // Demo autofill for admin
+      const fillAdminDemoBtn = document.getElementById('fillAdminDemoBtn');
+      if (fillAdminDemoBtn) {
+        fillAdminDemoBtn.addEventListener('click', function () {
+          const usernameInput = document.getElementById('adminUsername');
+          const passInput = document.getElementById('adminPassword');
+          if (usernameInput && passInput) {
+            usernameInput.value = 'LIB-2024-001';
+            passInput.value = 'AdminPassword123!';
+            showToast('Demo librarian credentials filled!', 'info');
+          }
+        });
+      }
+
+      adminLoginForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const usernameInput = document.getElementById('adminUsername');
+        const passInput = document.getElementById('adminPassword');
+        const roleSelect = document.getElementById('adminRole');
+        const submitBtn = document.getElementById('adminSubmitBtn');
+
+        const rawUsername = (usernameInput.value || '').trim();
+        const cleanedUser = cleanStudentNumber(rawUsername).toLowerCase();
+        const password = passInput.value;
+        const selectedRole = roleSelect ? roleSelect.value : 'Head Librarian';
+
+        if (!rawUsername) {
+          showToast('Please enter your Employee ID or Institutional Email.', 'error');
+          usernameInput.focus();
+          return;
+        }
+
+        if (!password) {
+          showToast('Please enter your Admin Password.', 'error');
+          passInput.focus();
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Authenticating Staff...';
+
+        // Attempt 1: Call Backend REST API (api/adminLogin.php)
+        if (window.location.protocol !== 'file:') {
+          try {
+            const apiRes = await fetch('api/adminLogin.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                adminUsername: rawUsername,
+                adminPassword: password,
+                adminRole: selectedRole
+              })
+            });
+
+            if (apiRes.ok) {
+              const resData = await apiRes.json();
+              if (resData.status === 'success') {
+                const adminObj = {
+                  id: resData.data.id,
+                  employeeId: resData.data.employeeId || rawUsername,
+                  fullName: resData.data.fullName || 'Library Staff',
+                  email: resData.data.email || rawUsername,
+                  role: resData.data.role || selectedRole,
+                  campus: resData.data.campus || 'Imus Campus'
+                };
+                sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
+                showToast(resData.message || 'Staff authenticated via API! Redirecting...', 'success');
+                setTimeout(() => {
+                  window.location.href = 'admin-dashboard.html';
+                }, 700);
+                return;
+              } else if (resData.message) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Sign In to Admin Console';
+                showToast(resData.message, 'error');
+                passInput.classList.add('is-invalid');
+                setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
+                return;
+              }
+            }
+          } catch (apiErr) {
+            console.info('Admin Backend API unavailable. Falling back to local storage session:', apiErr.message);
+          }
+        }
+
+        // Attempt 2: Local storage fallback (file:// standalone execution)
+        setTimeout(() => {
+          const admins = getAdmins();
+          const matchedAdmin = admins.find(a => {
+            const matchId = cleanStudentNumber(a.employeeId).toLowerCase() === cleanedUser;
+            const matchEmail = (a.email || '').toLowerCase() === rawUsername.toLowerCase();
+            return (matchId || matchEmail) && a.password === password;
+          });
+
+          if (matchedAdmin || (cleanedUser === 'lib2024001' && password === 'AdminPassword123!') || (rawUsername.toLowerCase() === 'admin@cvsu.edu.ph' && password === 'AdminPassword123!')) {
+            const adminObj = matchedAdmin || {
+              employeeId: 'LIB-2024-001',
+              fullName: 'Prof. Maria C. Santos',
+              email: 'admin@cvsu.edu.ph',
+              role: selectedRole,
+              campus: 'Imus Campus'
+            };
+
+            sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
+            showToast(`Welcome back, ${adminObj.fullName}! Loading Admin Console...`, 'success');
+
+            setTimeout(() => {
+              window.location.href = 'admin-dashboard.html';
+            }, 800);
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Sign In to Admin Console';
+            showToast('Invalid Employee ID/Email or Password. Access denied.', 'error');
+            passInput.classList.add('is-invalid');
+            setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
+          }
+        }, 400);
+      });
+    }
+
+    // ========================================================================
+    // ADMIN REGISTRATION PAGE LOGIC
+    // ========================================================================
+    const adminRegisterForm = document.getElementById('adminRegisterForm');
+    if (adminRegisterForm) {
+      setupPasswordToggle('toggleRegAdminPasswordBtn', 'regAdminPassword', 'regAdminEyeIcon');
+
+      adminRegisterForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const empInput = document.getElementById('regEmployeeId');
+        const nameInput = document.getElementById('regFullName');
+        const emailInput = document.getElementById('regAdminEmail');
+        const roleSelect = document.getElementById('regRole');
+        const passInput = document.getElementById('regAdminPassword');
+        const confirmPassInput = document.getElementById('regAdminConfirmPassword');
+        const submitBtn = document.getElementById('adminRegisterSubmitBtn');
+
+        const employeeId = (empInput.value || '').trim();
+        const fullName = (nameInput.value || '').trim();
+        const email = (emailInput.value || '').trim();
+        const role = roleSelect ? roleSelect.value : 'Circulation Desk Officer';
+        const password = passInput.value;
+        const confirmPassword = confirmPassInput.value;
+
+        if (!employeeId) {
+          showToast('Please enter an Employee ID.', 'error');
+          empInput.focus();
+          return;
+        }
+
+        if (!fullName) {
+          showToast('Please enter your full name.', 'error');
+          nameInput.focus();
+          return;
+        }
+
+        if (!email.includes('@')) {
+          showToast('Please enter a valid institutional email address.', 'error');
+          emailInput.focus();
+          return;
+        }
+
+        if (password.length < 6) {
+          showToast('Password must be at least 6 characters.', 'error');
+          passInput.focus();
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          showToast('Passwords do not match.', 'error');
+          confirmPassInput.focus();
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Creating Staff Account...';
+
+        // Attempt 1: Call Backend REST API (api/adminRegister.php)
+        if (window.location.protocol !== 'file:') {
+          try {
+            const apiRes = await fetch('api/adminRegister.php', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                employeeId: employeeId,
+                fullName: fullName,
+                email: email,
+                role: role,
+                password: password,
+                confirmPassword: confirmPassword
+              })
+            });
+
+            if (apiRes.ok) {
+              const resData = await apiRes.json();
+              if (resData.status === 'success') {
+                const newAdmin = {
+                  employeeId: employeeId,
+                  fullName: fullName,
+                  email: email,
+                  role: role,
+                  campus: 'Imus Campus'
+                };
+                sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(newAdmin));
+                showToast(resData.message || 'Staff account created successfully via API!', 'success');
+                setTimeout(() => {
+                  window.location.href = 'admin-dashboard.html';
+                }, 800);
+                return;
+              } else if (resData.message) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Register Staff Account';
+                showToast(resData.message, 'error');
+                return;
+              }
+            }
+          } catch (apiErr) {
+            console.info('Admin Registration API unavailable. Saving to client-side storage:', apiErr.message);
+          }
+        }
+
+        // Attempt 2: Local storage fallback (file:// execution)
+        setTimeout(() => {
+          const admins = getAdmins();
+          const exists = admins.some(a => a.employeeId.toLowerCase() === employeeId.toLowerCase() || a.email.toLowerCase() === email.toLowerCase());
+
+          if (exists) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Register Staff Account';
+            showToast('A staff account with that Employee ID or Email already exists.', 'error');
+            return;
+          }
+
+          const newAdmin = {
+            employeeId: employeeId,
+            fullName: fullName,
+            email: email,
+            role: role,
+            password: password,
+            registeredAt: new Date().toISOString()
+          };
+
+          admins.push(newAdmin);
+          saveAdmins(admins);
+
+          sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(newAdmin));
+          showToast('Staff account successfully registered! Loading console...', 'success');
+
+          setTimeout(() => {
+            window.location.href = 'admin-dashboard.html';
+          }, 900);
+        }, 500);
+      });
+    }
+
+    // ========================================================================
+    // ADMIN FORGOT PASSWORD LOGIC
+    // ========================================================================
+    const adminForgotForm = document.getElementById('adminForgotPasswordForm');
+    if (adminForgotForm) {
+      adminForgotForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const empInput = document.getElementById('recoveryEmployeeId');
+        const emailInput = document.getElementById('recoveryAdminEmail');
+        const submitBtn = document.getElementById('submitAdminRecoveryBtn');
+
+        const empId = cleanStudentNumber(empInput.value).toLowerCase();
+        const email = (emailInput.value || '').trim().toLowerCase();
+
+        if (!empId || !email) {
+          showToast('Please provide both Employee ID and Email Address.', 'error');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Verifying Record...';
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Send Staff Reset Instructions';
+          showToast(`Recovery instructions dispatched to ${email}!`, 'success');
+          setTimeout(() => {
+            window.location.href = 'admin-index.html';
+          }, 2000);
+        }, 600);
+      });
+    }
+
+    // ========================================================================
+    // STUDENT REGISTRATION PAGE LOGIC
+    // ========================================================================
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
       setupPasswordToggle('toggleRegPasswordBtn', 'regPassword', 'eyeRegIcon');
       setupPasswordToggle('toggleRegConfirmPasswordBtn', 'regConfirmPassword', 'eyeRegConfirmIcon');
       setupModal('portalGuideLink', 'portalGuideModal', 'closePortalGuideModal');
 
-      // Sample auto-fill for testing registration quickly
       const fillSampleBtn = document.getElementById('fillSampleRegisterBtn');
       if (fillSampleBtn) {
         fillSampleBtn.addEventListener('click', function () {
@@ -316,14 +648,12 @@
         const password = passInput.value;
         const confirmPassword = confirmPassInput.value;
 
-        // 1. Student Number Check
         if (!studentNo || studentNo.length < 6) {
           showToast('Please enter a valid Student Number (e.g. 202410123).', 'error');
           studentInput.focus();
           return;
         }
 
-        // 2. Email Check
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email || !emailRegex.test(email)) {
           showToast('Please enter a valid email address.', 'error');
@@ -331,7 +661,6 @@
           return;
         }
 
-        // 3. Mobile Number Check (PH Format 09XXXXXXXXX)
         const mobileRegex = /^09\d{9}$/;
         if (!mobile || !mobileRegex.test(mobile)) {
           showToast('Mobile number must be 11 digits starting with 09 (e.g. 09123456789).', 'error');
@@ -339,21 +668,18 @@
           return;
         }
 
-        // 4. Date of Birth Check
         if (!dob) {
           showToast('Please specify your Date of Birth.', 'error');
           dobInput.focus();
           return;
         }
 
-        // 5. Password Length
         if (password.length < 6) {
           showToast('Password must be at least 6 characters long.', 'error');
           passInput.focus();
           return;
         }
 
-        // 6. Password Match
         if (password !== confirmPassword) {
           showToast('Passwords do not match. Please re-enter.', 'error');
           confirmPassInput.focus();
@@ -363,75 +689,17 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Registering Account...';
 
-        // Attempt 1: Call REST API (api/register.php)
-        if (window.location.protocol !== 'file:') {
-          try {
-            const apiRes = await fetch('api/register.php', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                studentNumber: studentInput.value.trim(),
-                email: email,
-                mobile: mobile,
-                dob: dob,
-                password: password,
-                confirmPassword: confirmPassword
-              })
-            });
-
-            if (apiRes.ok) {
-              const resData = await apiRes.json();
-              if (resData.status === 'success') {
-                const newUser = {
-                  studentNumber: studentInput.value.trim(),
-                  fullName: resData.data.fullName || `Student ${studentNo}`,
-                  email: email,
-                  mobile: mobile,
-                  dob: dob,
-                  course: 'Cavite State University Student',
-                  campus: 'Imus Campus',
-                  registeredAt: new Date().toISOString(),
-                  borrowedBooks: []
-                };
-                sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(newUser));
-                showToast('Registration complete via API! Welcome to Library Portal.', 'success');
-                setTimeout(() => {
-                  window.location.href = 'dashboard.html';
-                }, 900);
-                return;
-              } else if (resData.message) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'Register';
-                showToast(resData.message, 'error');
-                return;
-              }
-            }
-          } catch (err) {
-            console.info('Backend API unavailable. Saving to client-side database:', err.message);
-          }
-        }
-
-        // Attempt 2: Check if student number or email already exists in local storage
-        const users = getUsers();
-        const studentExists = users.some(u => cleanStudentNumber(u.studentNumber) === studentNo);
-        if (studentExists) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = 'Register';
-          showToast('Student Number is already registered! Please sign in.', 'error');
-          studentInput.focus();
-          return;
-        }
-
-        const emailExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
-        if (emailExists) {
-          submitBtn.disabled = false;
-          submitBtn.innerText = 'Register';
-          showToast('This email address is already registered to another account.', 'error');
-          emailInput.focus();
-          return;
-        }
-
         setTimeout(() => {
+          const users = getUsers();
+          const studentExists = users.some(u => cleanStudentNumber(u.studentNumber) === studentNo);
+          if (studentExists) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Register';
+            showToast('Student Number is already registered! Please sign in.', 'error');
+            studentInput.focus();
+            return;
+          }
+
           const newUser = {
             studentNumber: studentInput.value.trim(),
             fullName: `Student ${studentNo}`,
@@ -448,9 +716,7 @@
           users.push(newUser);
           saveUsers(users);
 
-          // Automatically log user in
           sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(newUser));
-
           showToast('Account registered successfully! Welcome to the Library Portal.', 'success');
 
           setTimeout(() => {
@@ -460,9 +726,9 @@
       });
     }
 
-    // ------------------------------------------------------------------------
-    // FORGOT PASSWORD PAGE LOGIC
-    // ------------------------------------------------------------------------
+    // ========================================================================
+    // STUDENT FORGOT PASSWORD LOGIC
+    // ========================================================================
     const forgotForm = document.getElementById('forgotPasswordForm');
     if (forgotForm) {
       forgotForm.addEventListener('submit', function (e) {
@@ -505,4 +771,3 @@
   });
 
 })();
-

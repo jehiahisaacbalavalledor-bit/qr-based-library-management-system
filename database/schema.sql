@@ -1,7 +1,7 @@
 -- =========================================================================
 -- Cavite State University - Imus Campus
 -- Library Book Borrowing Management System (QR-Based)
--- Complete Database Schema: Milestones 1 to 5 (20% to 100%)
+-- Complete Database Schema: Students, Admins & Milestones 1 to 5
 -- Database: cvsu_library_db
 -- =========================================================================
 
@@ -26,10 +26,30 @@ CREATE TABLE IF NOT EXISTS `students` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Pre-seeded Sample Account for Defense Testing
+-- Pre-seeded Sample Student Account for Defense Testing
 INSERT INTO `students` (`student_number`, `email`, `mobile_number`, `date_of_birth`, `password_hash`, `full_name`, `course`, `campus`, `qr_token`)
 VALUES 
 ('202410001', 'juan.delacruz@cvsu.edu.ph', '09171234567', '2004-05-15', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'Juan C. Dela Cruz', 'BS in Information Technology', 'Imus Campus', 'CVSU-202410001-PASS')
+ON DUPLICATE KEY UPDATE `id`=`id`;
+
+-- =========================================================================
+-- ADMIN & STAFF CONSOLE: Library Staff & Circulation Officers
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS `admins` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `employee_id` VARCHAR(30) NOT NULL UNIQUE,
+  `full_name` VARCHAR(120) NOT NULL,
+  `email` VARCHAR(120) NOT NULL UNIQUE,
+  `role` ENUM('Head Librarian', 'Circulation Desk Officer', 'Cataloger', 'System Administrator') DEFAULT 'Head Librarian',
+  `password_hash` VARCHAR(255) NOT NULL,
+  `status` ENUM('active', 'inactive') DEFAULT 'active',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Pre-seeded Sample Admin Account
+INSERT INTO `admins` (`employee_id`, `full_name`, `email`, `role`, `password_hash`)
+VALUES 
+('LIB-2024-001', 'Prof. Maria C. Santos', 'admin@cvsu.edu.ph', 'Head Librarian', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- =========================================================================
