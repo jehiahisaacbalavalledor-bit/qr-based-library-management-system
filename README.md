@@ -1,71 +1,89 @@
 # QR-Based Library Book Borrowing Management System
 ### Cavite State University - Imus Campus (CvSU)
-**Project Status:** Milestone 1 — 20% Minimum System Requirement Deliverable
+
+An intelligent library book borrowing management system featuring student authentication, dynamic QR Code generation with student & book information, and a library circulation counter QR scanner that reads and processes loan transactions in real-time.
 
 ---
 
-## 🎯 20% Milestone Scope & Deliverables
-This submission satisfies the **20% Phase 1 Minimum System Requirement** focusing on the **Student Authentication & Account Registration Module**:
+## 🌟 Key Features
 
-1. **Sign In Page (`index.html` / `login.html`)**:
-   - Replicated from Reference Image 1.
-   - CvSU - Imus Campus branding and official Student Portal circuit emblem.
-   - Inputs: `Student Number *` and `Password *`.
-   - Centered `Forgot Password?` link.
-   - Green `Sign In` button.
-   - `Don't have an account yet? Register here` link.
-   - Footer: `? Support | Walkthrough` modal guides.
-
-2. **Account Registration Page (`register.html`)**:
-   - Replicated from Reference Image 2.
-   - Header divider and `Account Registration` title.
-   - Inputs in exact order:
-     - `Student Number *`
-     - `Email Address *`
-     - `Mobile Number *` with centered hint `Format: 11 digit number (09XXXXXXXXX)`
-     - `Date of Birth *` (`mm/dd/yyyy`)
-     - `Password *`
-     - `Confirm Password *`
-   - Green `Register` button.
-   - `Already have an account ? Sign in here` link.
-   - Footer: `? Portal Guide` modal.
-
-3. **Prototype Dashboard & QR Pass (`dashboard.html`)**:
-   - Demonstrates successful authentication and registration.
-   - Generates the student's unique **Digital QR ID Pass** preview.
-   - Displays a 20% Progress Bar and a Defense Roadmap for the panel.
-
-4. **Lightweight Backend / API (20% Scope)**:
-   - `api/login.php`: Validates credentials.
-   - `api/register.php`: Registers students.
-   - `database/schema.sql`: Single `students` table schema for Phase 1.
-   - Works in **Dual Mode**: runs directly in browser (`file://`) or on XAMPP/Apache with MySQL.
-
----
-
-## 🗺️ Capstone Development Roadmap (For Defense Panel)
-
-| Milestone | Scope | Status |
-| :---: | :--- | :---: |
-| **20%** | **Phase 1: Student Authentication & Registration (UI, Validation, QR ID Pass)** | **COMPLETED (Current)** |
-| **40%** | Phase 2: Library Book Inventory & Catalog Search | Upcoming |
-| **60%** | Phase 3: QR Scanner & Circulation Desk (Borrow & Return Workflow) | Upcoming |
-| **80%** | Phase 4: Due Date Tracking, SMS Alerts & Overdue Penalty Computation | Upcoming |
-| **100%** | Phase 5: Librarian Analytics, Reports & Final Campus Rollout | Upcoming |
-
----
-
-## 🚀 How to Run the 20% Prototype
-
-### Option 1: Direct Browser Launch (No installation required)
-- Double-click **`index.html`** in your browser.
-- Use the quick **Auto-fill** button or demo credentials:
+### 1. Student Authentication & Registration
+- **Sign In (`index.html`)**: Log in with Student Number & Password (based on official Student Portal branding).
+- **Registration (`register.html`)**: Full account registration with 11-digit mobile validation (`09XXXXXXXXX`), birth date, and student ID formatting.
+- **Pre-seeded Demo Student**:
   - **Student Number:** `202410001`
   - **Password:** `Password123!`
 
-### Option 2: Live Server / XAMPP
+### 2. QR Code Generation for Book Borrowing (`dashboard.html`)
+- When a student logs in, they can select a library book (e.g. *Clean Code*, *Head First Java*, *Database System Concepts*, etc.) or enter a custom title.
+- Clicking **"Generate Book Borrowing QR Code"** creates an official **Library Borrowing QR Slip**:
+  - Student Name (e.g., `Juan C. Dela Cruz`)
+  - Student Number (e.g., `202410001`)
+  - Course / Program (e.g., `BS in Information Technology`)
+  - Contact Information
+  - Book Title & Call Number
+  - Issue Date & 14-day Due Date
+  - Reference Code (e.g., `BRW-2026-8492`)
+  - Scannable 2D QR Code rendered dynamically on-screen.
+- Includes buttons to **"Print / Save Slip"** and **"Open Scanner to Read This QR Now"**.
+
+### 3. Library QR Scanner & Reader (`scanner.html`)
+- **Live Camera Scanner**: Opens your webcam/device camera with a targeting viewfinder and animated green laser beam.
+- **Automatic QR Decoding**: As soon as the QR Code is positioned in view, the scanner:
+  - 🔊 Plays an authentic **POS Barcode Scanner Beep** sound (Web Audio API).
+  - ✨ Highlights with a green verification flash.
+  - 📖 **Reads and displays all decoded student & borrowing details**:
+    - Verified Student Name, Number, and Department
+    - Book Title, Call Number, and Return Due Date
+    - Transaction Reference Number
+- **One-Click Quick Scan Buttons (Ideal for Presentations / Thesis Defense)**:
+  - `⚡ Scan Latest Student Borrow Slip (Juan Dela Cruz)`
+  - `⚡ Scan Student ID Pass (Maria Santos)`
+- **Physical USB Scanner Support**: Automatically listens for USB/Bluetooth handheld barcode scanner gun keystrokes.
+- **Circulation Log**: Records every scan in a real-time table with timestamps and status.
+
+---
+
+## 📁 Directory Structure
+```
+qr-based-library-management-system/
+├── index.html                 # Student Sign In Page
+├── register.html              # Account Registration Page
+├── forgot-password.html       # Password Reset Page
+├── dashboard.html             # Student Portal & Book Borrow QR Generator
+├── scanner.html               # Library Circulation Counter QR Scanner
+├── css/
+│   └── style.css              # CvSU Green theme, viewfinder laser, QR slip styles
+├── js/
+│   ├── auth.js                # Login & registration authentication handlers
+│   ├── dashboard.js           # Student profile & borrow QR slip generator
+│   ├── scanner.js             # Camera stream, beep audio, QR reader & circulation log
+│   └── qrcode.min.js          # Pure JavaScript offline QR generator
+├── api/                       # Optional PHP backend for XAMPP
+│   ├── db.php                 # MySQL PDO connection
+│   ├── login.php              # POST /api/login.php
+│   └── register.php           # POST /api/register.php
+├── database/
+│   └── schema.sql             # MySQL schema with sample students
+├── assets/
+│   └── logo.svg               # Vector Student Portal emblem
+└── README.md
+```
+
+---
+
+## 🚀 How to Run and Test
+
+### Method 1: Direct Double-Click (No server needed)
+1. Double click **[`index.html`](file:///c:/Users/janga/Downloads/qr-based-library-management-system/index.html)** in your browser.
+2. Click **"Auto-fill"** or enter `202410001` and `Password123!`, then click **Sign In**.
+3. In the student dashboard, pick a book and click **"Generate Book Borrowing QR Code"**.
+4. Click **"Open Scanner to Read This QR Now"** (or open [`scanner.html`](file:///c:/Users/janga/Downloads/qr-based-library-management-system/scanner.html)).
+5. The scanner reads the QR code, beeps, and displays the borrower's name, student number, and book!
+
+### Method 2: Local Server (PHP / Node.js)
 ```powershell
-# Using PHP local server:
+cd "C:\Users\janga\Downloads\qr-based-library-management-system"
 php -S localhost:8000
 ```
-Then visit `http://localhost:8000` in your browser.
+Then visit `http://localhost:8000` in your web browser.

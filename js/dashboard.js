@@ -1,12 +1,13 @@
 /**
  * Cavite State University - Imus Campus
- * Student Portal - Milestone 1: 20% Prototype Logic
+ * Student Portal - Book Borrowing & QR Generation Logic
  */
 
 (function () {
   'use strict';
 
   const SESSION_USER_KEY = 'cvsu_library_current_user';
+  const LATEST_BORROW_PASS_KEY = 'cvsu_latest_borrow_pass';
 
   // Helper: Toast notification
   function showToast(message, type = 'info') {
@@ -51,7 +52,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     let currentUser = getActiveUser();
 
-    // Default demonstration student if user directly navigated
+    // Default demonstration student if directly opened
     if (!currentUser) {
       currentUser = {
         studentNumber: '202410001',
@@ -73,31 +74,175 @@
     const badgeCourse = document.getElementById('badgeCourse');
 
     const profileStudentNo = document.getElementById('profileStudentNo');
+    const profileFullName = document.getElementById('profileFullName');
     const profileEmail = document.getElementById('profileEmail');
     const profileMobile = document.getElementById('profileMobile');
-    const profileDob = document.getElementById('profileDob');
+    const profileCourse = document.getElementById('profileCourse');
+    const profileCampus = document.getElementById('profileCampus');
 
-    if (navStudentName) navStudentName.textContent = currentUser.fullName || `Student ${currentUser.studentNumber}`;
+    const studentNameDisplay = currentUser.fullName || `Student ${currentUser.studentNumber}`;
+
+    if (navStudentName) navStudentName.textContent = studentNameDisplay;
     if (navStudentNo) navStudentNo.textContent = `ID: ${currentUser.studentNumber}`;
     if (badgeStudentNo) badgeStudentNo.textContent = currentUser.studentNumber;
-    if (badgeStudentName) badgeStudentName.textContent = currentUser.fullName || `Student ${currentUser.studentNumber}`;
+    if (badgeStudentName) badgeStudentName.textContent = studentNameDisplay;
     if (badgeCourse) badgeCourse.textContent = currentUser.course || 'BS Information Technology';
 
     if (profileStudentNo) profileStudentNo.textContent = currentUser.studentNumber;
+    if (profileFullName) profileFullName.textContent = studentNameDisplay;
     if (profileEmail) profileEmail.textContent = currentUser.email || 'N/A';
     if (profileMobile) profileMobile.textContent = currentUser.mobile || 'N/A';
-    if (profileDob) profileDob.textContent = currentUser.dob || 'N/A';
+    if (profileCourse) profileCourse.textContent = currentUser.course || 'BS in Information Technology';
+    if (profileCampus) profileCampus.textContent = currentUser.campus || 'Imus Campus';
 
-    // Generate Dynamic Student QR Code (Phase 1 ID Verification)
-    const qrContainer = document.getElementById('qrContainer');
-    if (qrContainer && typeof QRCode !== 'undefined') {
-      const qrPayload = `CVSU_STUDENT_ID:${currentUser.studentNumber}:${currentUser.fullName || 'STUDENT'}:VALID`;
-      new QRCode(qrContainer, {
-        text: qrPayload,
-        width: 160,
-        height: 160,
+    // Generate General Student QR Code (Left Column)
+    const studentQrContainer = document.getElementById('studentQrContainer');
+    if (studentQrContainer && typeof QRCode !== 'undefined') {
+      const generalPayload = JSON.stringify({
+        type: 'CVSU_STUDENT_ID',
+        studentNo: currentUser.studentNumber,
+        name: studentNameDisplay,
+        course: currentUser.course || 'BS Information Technology',
+        campus: 'Imus Campus'
+      });
+
+      new QRCode(studentQrContainer, {
+        text: generalPayload,
+        width: 165,
+        height: 165,
         colorDark: '#00875a',
         colorLight: '#ffffff'
+      });
+    }
+
+    // Book Selection Interactivity
+    let selectedBook = {
+      title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
+      author: 'Robert C. Martin',
+      callNo: 'QA 76.6 .C67'
+    };
+
+    const bookOptions = document.querySelectorAll('.borrow-book-option');
+    bookOptions.forEach(opt => {
+      opt.addEventListener('click', function () {
+        bookOptions.forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedBook = {
+          title: this.getAttribute('data-title'),
+          author: this.getAttribute('data-author'),
+          callNo: this.getAttribute('data-callno')
+        };
+        // Clear custom input if an option is clicked
+        const customInput = document.getElementById('customBookTitle');
+        if (customInput) customInput.value = '';
+      });
+    });
+
+    // Custom Book Title Input
+    const customBookInput = document.getElementById('customBookTitle');
+    if (customBookInput) {
+      customBookInput.addEventListener('input', function () {
+        if (this.value.trim().length > 0) {
+          bookOptions.forEach(o => o.classList.remove('selected'));
+          selectedBook = {
+            title: this.value.trim(),
+            author: 'Library Collection',
+            callNo: 'QA ' + Math.floor(100 + Math.random() * 900) + ' .CVSU'
+          };
+        }
+      });
+    }
+
+    // Modal Elements
+    const borrowModal = document.getElementById('borrowModal');
+    const closeBorrowModal = document.getElementById('closeBorrowModal');
+    const modalQrContainer = document.getElementById('modalQrContainer');
+
+    const slipStudentName = document.getElementById('slipStudentName');
+    const slipStudentNo = document.getElementById('slipStudentNo');
+    const slipCourse = document.getElementById('slipCourse');
+    const slipBookTitle = document.getElementById('slipBookTitle');
+    const slipCallNo = document.getElementById('slipCallNo');
+    const slipDueDate = document.getElementById('slipDueDate');
+    const slipRefCode = document.getElementById('slipRefCode');
+
+    // Generate Borrowing QR Code Button
+    const generateBtn = document.getElementById('generateBorrowQrBtn');
+    if (generateBtn) {
+      generateBtn.addEventListener('click', function () {
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 14);
+
+        const borrowDateStr = today.toISOString().split('T')[0];
+        const dueDateStr = dueDate.toISOString().split('T')[0];
+        const refNo = 'BRW-' + today.getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+
+        // Populate Slip details
+        if (slipStudentName) slipStudentName.textContent = studentNameDisplay;
+        if (slipStudentNo) slipStudentNo.textContent = currentUser.studentNumber;
+        if (slipCourse) slipCourse.textContent = currentUser.course || 'BS Information Technology';
+        if (slipBookTitle) slipBookTitle.textContent = selectedBook.title;
+        if (slipCallNo) slipCallNo.textContent = selectedBook.callNo;
+        if (slipDueDate) slipDueDate.textContent = dueDateStr;
+        if (slipRefCode) slipRefCode.textContent = `REF: ${refNo}`;
+
+        // Build Payload containing all student and book details
+        const borrowPayload = {
+          type: 'CVSU_BORROW',
+          studentNo: currentUser.studentNumber,
+          name: studentNameDisplay,
+          course: currentUser.course || 'BS Information Technology',
+          email: currentUser.email || `${currentUser.studentNumber}@cvsu.edu.ph`,
+          mobile: currentUser.mobile || '09171234567',
+          book: selectedBook.title,
+          callNo: selectedBook.callNo,
+          ref: refNo,
+          borrowDate: borrowDateStr,
+          dueDate: dueDateStr
+        };
+
+        // Save into localStorage for instant 1-click test scan in scanner.html
+        localStorage.setItem(LATEST_BORROW_PASS_KEY, JSON.stringify(borrowPayload));
+
+        // Render QR Code in Modal
+        if (modalQrContainer && typeof QRCode !== 'undefined') {
+          modalQrContainer.innerHTML = '';
+          new QRCode(modalQrContainer, {
+            text: JSON.stringify(borrowPayload),
+            width: 175,
+            height: 175,
+            colorDark: '#00875a',
+            colorLight: '#ffffff'
+          });
+        }
+
+        // Open Modal
+        if (borrowModal) borrowModal.classList.add('active');
+        showToast('Book Borrowing QR Code generated successfully!', 'success');
+      });
+    }
+
+    // Close Modal
+    if (closeBorrowModal) {
+      closeBorrowModal.addEventListener('click', function () {
+        if (borrowModal) borrowModal.classList.remove('active');
+      });
+    }
+
+    if (borrowModal) {
+      borrowModal.addEventListener('click', function (e) {
+        if (e.target === borrowModal) {
+          borrowModal.classList.remove('active');
+        }
+      });
+    }
+
+    // Print Slip Button
+    const printSlipBtn = document.getElementById('printSlipBtn');
+    if (printSlipBtn) {
+      printSlipBtn.addEventListener('click', function () {
+        window.print();
       });
     }
 
@@ -112,6 +257,7 @@
         }, 500);
       });
     }
+
   });
 
 })();
