@@ -89,6 +89,30 @@
     // 1. Try JSON parsing
     try {
       const obj = JSON.parse(raw);
+
+      // 1A. Scanned Book QR Code (New Dual QR System)
+      if (obj.type === 'CVSU_BOOK_QR' || (obj.bookCode && !obj.studentNo)) {
+        return {
+          isBookOnly: true,
+          type: 'CVSU_BOOK_QR',
+          bookCode: obj.bookCode,
+          accessionNo: obj.accessionNo || 'ACC-2026-N/A',
+          callNo: obj.callNo || 'QA 76.6',
+          book: obj.title || 'Library Catalog Book',
+          author: obj.author || 'CvSU Author',
+          category: obj.category || 'General Collection',
+          isRoomUseOnly: obj.isRoomUseOnly ? true : false,
+          studentNo: '202410001',
+          name: 'Juan C. Dela Cruz',
+          course: 'BS Information Technology',
+          email: 'juan.delacruz@cvsu.edu.ph',
+          mobile: '09171234567',
+          ref: 'BRW-' + (obj.bookCode || '2026') + '-' + Math.floor(100 + Math.random() * 900),
+          borrowDate: new Date().toISOString().split('T')[0],
+          dueDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]
+        };
+      }
+
       if (obj.studentNo || obj.studentNumber) {
         return {
           studentNo: obj.studentNo || obj.studentNumber,
@@ -211,7 +235,13 @@
     if (resCallNo) resCallNo.textContent = parsed.callNo;
     if (resDueDate) resDueDate.textContent = parsed.dueDate;
 
-    showToast(`QR Code Read: ${parsed.name} (${parsed.studentNo})`, 'success');
+    if (parsed.isRoomUseOnly) {
+      showToast(`🔒 Special Collection Alert: Room Use Only inside Library!`, 'error');
+    } else if (parsed.isBookOnly) {
+      showToast(`Book QR Read: ${parsed.book} (${parsed.callNo})`, 'success');
+    } else {
+      showToast(`QR Code Read: ${parsed.name} (${parsed.studentNo})`, 'success');
+    }
   }
 
   // Render Recent Circulation History Table
@@ -390,6 +420,44 @@
         });
 
         handleScannedCode(mariaData);
+      });
+    }
+
+    // Quick Test Scan 3: Scanned Physical Book QR Sticker
+    const quickScanBookQrBtn = document.getElementById('quickScanBookQrBtn');
+    if (quickScanBookQrBtn) {
+      quickScanBookQrBtn.addEventListener('click', function () {
+        const bookData = JSON.stringify({
+          type: 'CVSU_BOOK_QR',
+          bookCode: 'BK-CVSU-001',
+          accessionNo: 'ACC-2026-00101',
+          callNo: 'QA 76.6 .C67',
+          classification: '005.1',
+          title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
+          author: 'Robert C. Martin',
+          category: 'Computer Science & IT',
+          isRoomUseOnly: 0
+        });
+        handleScannedCode(bookData);
+      });
+    }
+
+    // Quick Test Scan 4: Special Collection Book (Room Use Only)
+    const quickScanSpecialBookBtn = document.getElementById('quickScanSpecialBookBtn');
+    if (quickScanSpecialBookBtn) {
+      quickScanSpecialBookBtn.addEventListener('click', function () {
+        const specialBookData = JSON.stringify({
+          type: 'CVSU_BOOK_QR',
+          bookCode: 'BK-CVSU-006',
+          accessionNo: 'ACC-SPEC-00001',
+          callNo: 'FIL QA 76.2 .C8',
+          classification: '378.599',
+          title: 'CvSU Imus Campus Undergraduate IT Theses Compendium Vol. IV',
+          author: 'CvSU Department of Computer Studies',
+          category: 'Special Collections',
+          isRoomUseOnly: 1
+        });
+        handleScannedCode(specialBookData);
       });
     }
 
