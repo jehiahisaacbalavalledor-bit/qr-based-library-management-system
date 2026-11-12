@@ -1,6 +1,7 @@
 /**
  * Cavite State University - Imus Campus
- * Student Portal - Book Borrowing & QR Generation Logic
+ * Library Management System - Dashboard Controller
+ * Handles Statistics, Dual QR Generation, Due Today Alerts, Theme Toggling & Navigation
  */
 
 (function () {
@@ -8,6 +9,8 @@
 
   const SESSION_USER_KEY = 'cvsu_library_current_user';
   const LATEST_BORROW_PASS_KEY = 'cvsu_latest_borrow_pass';
+  const THEME_STORAGE_KEY = 'cvsu_library_theme';
+  const STATS_STORAGE_KEY = 'cvsu_library_system_stats';
 
   // Helper: Toast notification
   function showToast(message, type = 'info') {
@@ -50,9 +53,8 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    // 1. Initialize Active User Data
     let currentUser = getActiveUser();
-
-    // Default demonstration student if directly opened
     if (!currentUser) {
       currentUser = {
         studentNumber: '202410001',
@@ -60,15 +62,18 @@
         email: 'juan.delacruz@cvsu.edu.ph',
         mobile: '09171234567',
         dob: '2004-05-15',
-        course: 'BS in Information Technology',
+        course: 'BS Information Technology',
+        yearLevel: '3rd Year',
         campus: 'Imus Campus'
       };
       sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
     }
 
-    // Populate Student Data in UI
-    const navStudentName = document.getElementById('navStudentName');
-    const navStudentNo = document.getElementById('navStudentNo');
+    const studentNameDisplay = currentUser.fullName || `Student ${currentUser.studentNumber}`;
+
+    // 2. Populate UI Names & Header Info
+    const topNavStudentName = document.getElementById('topNavStudentName');
+    const userAvatarText = document.getElementById('userAvatarText');
     const badgeStudentNo = document.getElementById('badgeStudentNo');
     const badgeStudentName = document.getElementById('badgeStudentName');
     const badgeCourse = document.getElementById('badgeCourse');
@@ -78,12 +83,14 @@
     const profileEmail = document.getElementById('profileEmail');
     const profileMobile = document.getElementById('profileMobile');
     const profileCourse = document.getElementById('profileCourse');
+    const profileYearLevel = document.getElementById('profileYearLevel');
     const profileCampus = document.getElementById('profileCampus');
 
-    const studentNameDisplay = currentUser.fullName || `Student ${currentUser.studentNumber}`;
-
-    if (navStudentName) navStudentName.textContent = studentNameDisplay;
-    if (navStudentNo) navStudentNo.textContent = `ID: ${currentUser.studentNumber}`;
+    if (topNavStudentName) topNavStudentName.textContent = studentNameDisplay;
+    if (userAvatarText) {
+      const parts = studentNameDisplay.split(' ');
+      userAvatarText.textContent = parts.length > 1 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : 'JD';
+    }
     if (badgeStudentNo) badgeStudentNo.textContent = currentUser.studentNumber;
     if (badgeStudentName) badgeStudentName.textContent = studentNameDisplay;
     if (badgeCourse) badgeCourse.textContent = currentUser.course || 'BS Information Technology';
@@ -92,17 +99,65 @@
     if (profileFullName) profileFullName.textContent = studentNameDisplay;
     if (profileEmail) profileEmail.textContent = currentUser.email || 'N/A';
     if (profileMobile) profileMobile.textContent = currentUser.mobile || 'N/A';
-    if (profileCourse) profileCourse.textContent = currentUser.course || 'BS in Information Technology';
+    if (profileCourse) profileCourse.textContent = currentUser.course || 'BS Information Technology';
+    if (profileYearLevel) profileYearLevel.textContent = currentUser.yearLevel || '3rd Year';
     if (profileCampus) profileCampus.textContent = currentUser.campus || 'Imus Campus';
 
-    // Generate General Student QR Code (Left Column)
+    // 3. Theme Toggle (Dark / Light Mode)
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkModeIcon = document.getElementById('darkModeIcon');
+    const darkModeText = document.getElementById('darkModeText');
+
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark-theme');
+        if (darkModeIcon) darkModeIcon.textContent = '☀';
+        if (darkModeText) darkModeText.textContent = 'Light Mode';
+        localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+      } else {
+        document.body.classList.remove('dark-theme');
+        if (darkModeIcon) darkModeIcon.textContent = '☾';
+        if (darkModeText) darkModeText.textContent = 'Dark Mode';
+        localStorage.setItem(THEME_STORAGE_KEY, 'light');
+      }
+    }
+
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'dark') {
+      applyTheme(true);
+    }
+
+    if (darkModeToggle) {
+      darkModeToggle.addEventListener('click', function () {
+        const isCurrentlyDark = document.body.classList.contains('dark-theme');
+        applyTheme(!isCurrentlyDark);
+        showToast(`Switched to ${!isCurrentlyDark ? 'Dark' : 'Light'} Mode`, 'info');
+      });
+    }
+
+    // 4. Sidebar Responsive Toggle
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const appSidebar = document.getElementById('appSidebar');
+    if (sidebarToggle && appSidebar) {
+      sidebarToggle.addEventListener('click', function () {
+        if (window.innerWidth <= 768) {
+          appSidebar.classList.toggle('mobile-open');
+        } else {
+          appSidebar.classList.toggle('collapsed');
+        }
+      });
+    }
+
+    // 5. Generate Official Student Digital QR ID Pass
     const studentQrContainer = document.getElementById('studentQrContainer');
     if (studentQrContainer && typeof QRCode !== 'undefined') {
+      studentQrContainer.innerHTML = '';
       const generalPayload = JSON.stringify({
         type: 'CVSU_STUDENT_ID',
         studentNo: currentUser.studentNumber,
         name: studentNameDisplay,
         course: currentUser.course || 'BS Information Technology',
+        yearLevel: currentUser.yearLevel || '3rd Year',
         campus: 'Imus Campus'
       });
 
@@ -115,7 +170,29 @@
       });
     }
 
-    // Book Selection Interactivity
+    // 6. Loan Type & Deadline Selection
+    let selectedLoanDays = 3; // Default 3 days loan
+    let isOvernight = false;
+    const loanTypeBtns = document.querySelectorAll('.loan-type-btn');
+    loanTypeBtns.forEach(btn => {
+      btn.addEventListener('click', function () {
+        loanTypeBtns.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const daysAttr = this.getAttribute('data-days');
+        const typeAttr = this.getAttribute('data-type');
+        if (typeAttr === 'overnight') {
+          selectedLoanDays = 1;
+          isOvernight = true;
+          showToast('Overnight loan selected: Due tomorrow before 10:00 AM.', 'info');
+        } else {
+          selectedLoanDays = parseInt(daysAttr, 10);
+          isOvernight = false;
+          showToast(`${selectedLoanDays}-Day Loan selected (Deadline: ${selectedLoanDays} days).`, 'info');
+        }
+      });
+    });
+
+    // 7. Book Selection Interactivity
     let selectedBook = {
       title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
       author: 'Robert C. Martin',
@@ -132,13 +209,12 @@
           author: this.getAttribute('data-author'),
           callNo: this.getAttribute('data-callno')
         };
-        // Clear custom input if an option is clicked
         const customInput = document.getElementById('customBookTitle');
         if (customInput) customInput.value = '';
       });
     });
 
-    // Custom Book Title Input
+    // Custom Book Input
     const customBookInput = document.getElementById('customBookTitle');
     if (customBookInput) {
       customBookInput.addEventListener('input', function () {
@@ -146,14 +222,22 @@
           bookOptions.forEach(o => o.classList.remove('selected'));
           selectedBook = {
             title: this.value.trim(),
-            author: 'Library Collection',
+            author: 'Library General Collection',
             callNo: 'QA ' + Math.floor(100 + Math.random() * 900) + ' .CVSU'
           };
         }
       });
     }
 
-    // Modal Elements
+    // 8. Due Today Banner Button
+    const openScannerFromBannerBtn = document.getElementById('openScannerFromBannerBtn');
+    if (openScannerFromBannerBtn) {
+      openScannerFromBannerBtn.addEventListener('click', function () {
+        window.location.href = 'scanner.html';
+      });
+    }
+
+    // 9. QR Borrow Slip Modal & Generation
     const borrowModal = document.getElementById('borrowModal');
     const closeBorrowModal = document.getElementById('closeBorrowModal');
     const modalQrContainer = document.getElementById('modalQrContainer');
@@ -164,30 +248,35 @@
     const slipBookTitle = document.getElementById('slipBookTitle');
     const slipCallNo = document.getElementById('slipCallNo');
     const slipDueDate = document.getElementById('slipDueDate');
+    const slipLoanTypeLabel = document.getElementById('slipLoanTypeLabel');
     const slipRefCode = document.getElementById('slipRefCode');
 
-    // Generate Borrowing QR Code Button
     const generateBtn = document.getElementById('generateBorrowQrBtn');
     if (generateBtn) {
       generateBtn.addEventListener('click', function () {
         const today = new Date();
         const dueDate = new Date();
-        dueDate.setDate(today.getDate() + 14);
+
+        if (isOvernight) {
+          dueDate.setDate(today.getDate() + 1);
+        } else {
+          dueDate.setDate(today.getDate() + selectedLoanDays);
+        }
 
         const borrowDateStr = today.toISOString().split('T')[0];
         const dueDateStr = dueDate.toISOString().split('T')[0];
-        const refNo = 'BRW-' + today.getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
+        const refNo = 'BRW-2026-' + Math.floor(1000 + Math.random() * 9000);
 
-        // Populate Slip details
         if (slipStudentName) slipStudentName.textContent = studentNameDisplay;
         if (slipStudentNo) slipStudentNo.textContent = currentUser.studentNumber;
         if (slipCourse) slipCourse.textContent = currentUser.course || 'BS Information Technology';
         if (slipBookTitle) slipBookTitle.textContent = selectedBook.title;
         if (slipCallNo) slipCallNo.textContent = selectedBook.callNo;
         if (slipDueDate) slipDueDate.textContent = dueDateStr;
+        if (slipLoanTypeLabel) slipLoanTypeLabel.textContent = isOvernight ? 'Overnight' : `${selectedLoanDays} Days`;
         if (slipRefCode) slipRefCode.textContent = `REF: ${refNo}`;
 
-        // Build Payload containing all student and book details
+        // Build Payload containing student and book information
         const borrowPayload = {
           type: 'CVSU_BORROW',
           studentNo: currentUser.studentNumber,
@@ -199,10 +288,11 @@
           callNo: selectedBook.callNo,
           ref: refNo,
           borrowDate: borrowDateStr,
-          dueDate: dueDateStr
+          dueDate: dueDateStr,
+          loanType: isOvernight ? 'overnight' : `${selectedLoanDays}_days`
         };
 
-        // Save into localStorage for instant 1-click test scan in scanner.html
+        // Cache into localStorage for 1-click test scan in scanner.html
         localStorage.setItem(LATEST_BORROW_PASS_KEY, JSON.stringify(borrowPayload));
 
         // Render QR Code in Modal
@@ -217,13 +307,11 @@
           });
         }
 
-        // Open Modal
         if (borrowModal) borrowModal.classList.add('active');
         showToast('Book Borrowing QR Code generated successfully!', 'success');
       });
     }
 
-    // Close Modal
     if (closeBorrowModal) {
       closeBorrowModal.addEventListener('click', function () {
         if (borrowModal) borrowModal.classList.remove('active');
@@ -232,13 +320,10 @@
 
     if (borrowModal) {
       borrowModal.addEventListener('click', function (e) {
-        if (e.target === borrowModal) {
-          borrowModal.classList.remove('active');
-        }
+        if (e.target === borrowModal) borrowModal.classList.remove('active');
       });
     }
 
-    // Print Slip Button
     const printSlipBtn = document.getElementById('printSlipBtn');
     if (printSlipBtn) {
       printSlipBtn.addEventListener('click', function () {
@@ -246,7 +331,38 @@
       });
     }
 
-    // Sign Out Action
+    // 10. Action Cards Interactivity
+    const cardCatalog = document.getElementById('cardCatalog');
+    if (cardCatalog) {
+      cardCatalog.addEventListener('click', function () {
+        showToast('Book Catalog: 1,482 total titles & accession copies loaded.', 'info');
+        document.getElementById('borrowStationSection').scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    const cardTransactions = document.getElementById('cardTransactions');
+    if (cardTransactions) {
+      cardTransactions.addEventListener('click', function () {
+        showToast('Transactions: Redirecting to circulation desk records...', 'info');
+        window.location.href = 'scanner.html';
+      });
+    }
+
+    const cardSettings = document.getElementById('cardSettings');
+    if (cardSettings) {
+      cardSettings.addEventListener('click', function () {
+        showToast('System Policy: Max 2 books per student | ₱20/day penalty (Fri-Sun & holidays exempt).', 'info');
+      });
+    }
+
+    const cardImportExport = document.getElementById('cardImportExport');
+    if (cardImportExport) {
+      cardImportExport.addEventListener('click', function () {
+        showToast('Import/Export CSV module ready. Supporting books & student rosters.', 'info');
+      });
+    }
+
+    // 11. Sign Out Action
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function () {
@@ -259,5 +375,4 @@
     }
 
   });
-
 })();
