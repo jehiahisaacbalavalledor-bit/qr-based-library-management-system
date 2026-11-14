@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & Librarian Console | Cavite State University - Imus Campus</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      justify-content: flex-start;
+      padding: 0;
+      color: #1e293b;
+    }
+
+    /* Top Navigation Bar */
+    .top-navbar {
+      width: 100%;
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .admin-pill {
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .admin-pill span.dot {
+      width: 7px;
+      height: 7px;
+      background: #10b981;
+      border-radius: 50%;
+    }
+
+    .nav-user-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-greeting {
+      text-align: right;
+    }
+
+    .user-greeting .greet-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .user-greeting .greet-role {
+      font-size: 11.5px;
+      color: #00875a;
+      font-weight: 600;
+    }
+
+    .btn-portal-switch {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s;
+    }
+
+    .btn-portal-switch:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-logout {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #dc2626;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-logout:hover {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    /* Dashboard Layout */
+    .dashboard-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 24px auto 48px auto;
+      padding: 0 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      box-sizing: border-box;
+    }
+
+    /* Stats Overview Cards */
+    .stats-overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .stat-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.green { background: #dcfce7; color: #16a34a; }
+    .stat-icon.blue { background: #e0f2fe; color: #0284c7; }
+    .stat-icon.orange { background: #fef3c7; color: #d97706; }
+    .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+
+    .stat-content .stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .stat-content .stat-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* Action Toolbar & Cards */
+    .admin-card {
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      overflow: hidden;
+    }
+
+    .admin-card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafbfc;
+    }
+
+    .admin-card-header h3 {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .admin-card-body {
+      padding: 20px;
+    }
+
+    /* Circulation Desk Quick Kiosk */
+    .kiosk-quick-panel {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .form-ctrl-sm {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #ffffff;
+    }
+
+    .btn-green {
+      background: #00875a;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-green:hover { background: #00704a; }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .admin-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .admin-table td {
+      padding: 12px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .admin-table tr:hover { background: #fafbfc; }
+
+    .badge-status {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    .badge-available { background: #dcfce7; color: #15803d; }
+    .badge-borrowed { background: #e0f2fe; color: #0369a1; }
+    .badge-overdue { background: #fee2e2; color: #b91c1c; font-weight: 800; }
+
+    .btn-tbl-sm {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-tbl-sm:hover {
+      background: #00875a;
+      color: #ffffff;
+      border-color: #00875a;
+    }
+
+    /* Modal Form */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-dialog {
+      background: #ffffff;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .modal-header {
+      background: #f8fafc;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid #e2e8f0;
+      background: #fafbfc;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    @media (max-width: 960px) {
+      .stats-overview-grid { grid-template-columns: repeat(2, 1fr); }
+      .kiosk-quick-panel { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Top Navigation Header -->
+  <nav class="top-navbar">
+    <div class="nav-brand">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 42" width="135" height="36" role="img" aria-label="Admin Portal Logo">
+        <g transform="translate(4, 2)">
+          <rect x="11.5" y="11.5" width="15" height="15" rx="2" transform="rotate(45 19 19)" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round" />
+          <circle cx="19" cy="19" r="3" fill="#f59e0b" />
+          <path d="M 13.5 13.5 L 6 6" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="5" cy="5" r="2.2" fill="#f59e0b" />
+          <path d="M 24.5 13.5 L 32 6" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="33" cy="5" r="2.2" fill="#f59e0b" />
+          <path d="M 13.5 24.5 L 6 32" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="5" cy="33" r="2.2" fill="#f59e0b" />
+          <path d="M 24.5 24.5 L 32 32" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="33" cy="33" r="2.2" fill="#f59e0b" />
+          <path d="M 19 8.5 L 19 3" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="19" cy="2" r="2" fill="#f59e0b" />
+          <path d="M 19 29.5 L 19 35" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="19" cy="36" r="2" fill="#f59e0b" />
+        </g>
+        <text x="48" y="18" font-family="'Poppins', sans-serif" font-weight="800" font-size="14.5" fill="#00875a">ADMIN</text>
+        <text x="48" y="32" font-family="'Poppins', sans-serif" font-weight="800" font-size="14.5" fill="#0f172a">PORTAL</text>
+      </svg>
+      <span class="admin-pill">
+        <span class="dot"></span>
+        <span id="navRoleBadge">Head Librarian Console</span>
+      </span>
+    </div>
+
+    <div class="nav-user-controls">
+      <div class="user-greeting">
+        <div class="greet-name" id="adminStaffName">Prof. Maria C. Santos</div>
+        <div class="greet-role" id="adminStaffId">ID: LIB-2024-001</div>
+      </div>
+      <a href="dashboard.html" class="btn-portal-switch" title="View as Student">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Student Portal
+      </a>
+      <button class="btn-logout" id="adminLogoutBtn" title="Sign Out">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Sign Out
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="dashboard-container">
+    
+    <!-- KPI Counters -->
+    <div class="stats-overview-grid">
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminTotalCatalog">8</div>
+          <div class="stat-label">Catalog Titles</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminActiveLoans">2</div>
+          <div class="stat-label">Circulating Loans</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminOverdueCount">1</div>
+          <div class="stat-label">Overdue Books</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminFinesCollected">₱30.00</div>
+          <div class="stat-label">Assessed Penalties</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Circulation Desk Action Center -->
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00875a" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Circulation Desk Terminal (QR Checkout & Return)
+        </h3>
+        <span style="font-size: 12px; color: #64748b;">Instant Barcode/QR Scanner Processing</span>
+      </div>
+      <div class="admin-card-body">
+        <div class="kiosk-quick-panel">
+          <div>
+            <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Student Number / QR Pass Token</label>
+            <input type="text" id="circStudentNo" class="form-ctrl-sm" placeholder="e.g. 202410001">
+          </div>
+          <div>
+            <label style="font-size: 11.5px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Book Barcode / Title</label>
+            <select id="circBookSelect" class="form-ctrl-sm">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div>
+            <button class="btn-green" id="circIssueBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              Issue Book Loan (7 Days)
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Circulating Loans Management -->
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          All Active Student Loans & Penalty Monitor
+        </h3>
+        <button class="btn-tbl-sm" onclick="window.print()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Print Loan Sheet
+        </button>
+      </div>
+      <div class="admin-card-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Txn ID</th>
+                <th>Student ID</th>
+                <th>Book Title & Code</th>
+                <th>Borrow Date</th>
+                <th>Due Date</th>
+                <th>Penalty Status</th>
+                <th>Librarian Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminLoansTbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Book Inventory Catalog -->
+    <section class="admin-card">
+      <div class="admin-card-header">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          Master Book Inventory
+        </h3>
+        <button class="btn-green" id="openAddBookBtn" style="padding: 5px 12px; font-size: 12px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add New Book Title
+        </button>
+      </div>
+      <div class="admin-card-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>ISBN</th>
+                <th>Title & Author</th>
+                <th>Category</th>
+                <th>Shelf Location</th>
+                <th>Available / Total</th>
+              </tr>
+            </thead>
+            <tbody id="adminBooksTbody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Modal: Add New Book -->
+  <div class="modal-overlay" id="addBookModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h4 style="margin: 0; font-size: 16px;">Add New Book to Inventory</h4>
+        <button class="modal-close-btn" id="closeAddBookBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <form id="addBookForm">
+        <div class="modal-body">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">Book Code (Barcode)</label>
+            <input type="text" id="newBookCode" class="form-control" required placeholder="e.g. BK-9050">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">Book Title</label>
+            <input type="text" id="newBookTitle" class="form-control" required placeholder="e.g. Software Architecture in Practice">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">Author(s)</label>
+            <input type="text" id="newBookAuthor" class="form-control" required placeholder="e.g. Len Bass, Paul Clements">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">Category</label>
+            <select id="newBookCategory" class="form-control" style="background: #ffffff;">
+              <option value="CS & IT">CS & IT</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Business">Business</option>
+              <option value="General Education">General Education</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label" style="font-size: 12px;">Total Copies</label>
+            <input type="number" id="newBookCopies" class="form-control" min="1" max="50" value="5" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-tbl-sm" id="cancelAddBookBtn">Cancel</button>
+          <button type="submit" class="btn-green">Add Book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+      const SESSION_ADMIN_KEY = 'cvsu_library_current_admin';
+      const STORAGE_BOOKS_KEY = 'cvsu_library_catalog_books';
+      const STORAGE_TRANSACTIONS_KEY = 'cvsu_library_transactions';
+      const STORAGE_ACTIVITY_KEY = 'cvsu_library_activity_logs';
+
+      function showToast(msg, type = 'info') {
+        const c = document.getElementById('toastContainer');
+        if (!c) return;
+        const t = document.createElement('div');
+        t.className = `toast toast-${type}`;
+        t.innerHTML = `<span>${msg}</span>`;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 3500);
+      }
+
+      function getAdmin() {
+        try {
+          return JSON.parse(sessionStorage.getItem(SESSION_ADMIN_KEY)) || {
+            fullName: 'Prof. Maria C. Santos',
+            employeeId: 'LIB-2024-001',
+            role: 'Head Librarian'
+          };
+        } catch(e) {
+          return { fullName: 'Prof. Maria C. Santos', employeeId: 'LIB-2024-001', role: 'Head Librarian' };
+        }
+      }
+
+      function getBooks() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_BOOKS_KEY)) || [];
+        } catch(e) { return []; }
+      }
+
+      function getTransactions() {
+        try {
+          return JSON.parse(localStorage.getItem(STORAGE_TRANSACTIONS_KEY)) || [];
+        } catch(e) { return []; }
+      }
+
+      function render() {
+        const admin = getAdmin();
+        document.getElementById('adminStaffName').textContent = admin.fullName;
+        document.getElementById('adminStaffId').textContent = `ID: ${admin.employeeId}`;
+        document.getElementById('navRoleBadge').textContent = `${admin.role} Console`;
+
+        const books = getBooks();
+        const txns = getTransactions();
+        const activeTxns = txns.filter(t => t.status === 'BORROWED');
+
+        let overdueCount = 0;
+        let totalFines = 0;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        activeTxns.forEach(t => {
+          const d = new Date(t.dueDate);
+          d.setHours(0,0,0,0);
+          const diff = Math.ceil((today - d) / (1000 * 60 * 60 * 24));
+          if (diff > 0) {
+            overdueCount++;
+            totalFines += diff * 10.0;
+          }
+        });
+
+        document.getElementById('adminTotalCatalog').textContent = books.length;
+        document.getElementById('adminActiveLoans').textContent = activeTxns.length;
+        document.getElementById('adminOverdueCount').textContent = overdueCount;
+        document.getElementById('adminFinesCollected').textContent = `₱${totalFines.toFixed(2)}`;
+
+        // Populate book select
+        const sel = document.getElementById('circBookSelect');
+        sel.innerHTML = books.map(b => `<option value="${b.id}" ${b.availableCopies <= 0 ? 'disabled' : ''}>${b.id} — ${b.title} (${b.availableCopies} available)</option>`).join('');
+
+        // Populate loans table
+        const loansTbody = document.getElementById('adminLoansTbody');
+        if (activeTxns.length === 0) {
+          loansTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No books currently out on loan.</td></tr>`;
+        } else {
+          loansTbody.innerHTML = activeTxns.map(t => {
+            const d = new Date(t.dueDate);
+            d.setHours(0,0,0,0);
+            const diff = Math.ceil((today - d) / (1000 * 60 * 60 * 24));
+            let badge = '';
+            if (diff > 0) {
+              badge = `<span class="badge-status badge-overdue">OVERDUE (${diff}d) ₱${(diff * 10).toFixed(2)}</span>`;
+            } else {
+              badge = `<span class="badge-status badge-borrowed">Active (${Math.abs(diff)}d left)</span>`;
+            }
+
+            return `
+              <tr>
+                <td><strong style="font-family: monospace;">${t.id}</strong></td>
+                <td><span style="font-family: monospace; font-weight: 700; color: #00875a;">${t.studentNumber}</span></td>
+                <td><strong>${t.bookTitle}</strong><div style="font-size: 11px; color: #64748b;">${t.bookId}</div></td>
+                <td>${t.borrowDate}</td>
+                <td><strong>${t.dueDate}</strong></td>
+                <td>${badge}</td>
+                <td>
+                  <button class="btn-tbl-sm return-btn" data-txnid="${t.id}" data-bookid="${t.bookId}">Check-In Return</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          loansTbody.querySelectorAll('.return-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+              const txId = this.getAttribute('data-txnid');
+              const bkId = this.getAttribute('data-bookid');
+              const allT = getTransactions();
+              const item = allT.find(x => x.id === txId);
+              if (item) {
+                item.status = 'RETURNED';
+                item.returnDate = new Date().toISOString().split('T')[0];
+                localStorage.setItem(STORAGE_TRANSACTIONS_KEY, JSON.stringify(allT));
+
+                const allB = getBooks();
+                const b = allB.find(x => x.id === bkId);
+                if (b) {
+                  b.availableCopies = Math.min(b.totalCopies, b.availableCopies + 1);
+                  localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(allB));
+                }
+
+                showToast(`Book returned and restocked into inventory!`, 'success');
+                render();
+              }
+            });
+          });
+        }
+
+        // Populate books table
+        const booksTbody = document.getElementById('adminBooksTbody');
+        booksTbody.innerHTML = books.map(b => `
+          <tr>
+            <td><strong style="font-family: monospace;">${b.id}</strong></td>
+            <td>${b.isbn}</td>
+            <td><strong>${b.title}</strong><div style="font-size: 11.5px; color: #64748b;">${b.author}</div></td>
+            <td><span class="badge-status badge-borrowed">${b.category}</span></td>
+            <td>${b.location}</td>
+            <td><strong style="color: ${b.availableCopies > 0 ? '#16a34a' : '#dc2626'};">${b.availableCopies}</strong> / ${b.totalCopies}</td>
+          </tr>
+        `).join('');
+      }
+
+      // Issue book handler
+      document.getElementById('circIssueBtn').addEventListener('click', function() {
+        const studentNo = document.getElementById('circStudentNo').value.trim();
+        const bookId = document.getElementById('circBookSelect').value;
+        if (!studentNo) { showToast('Please enter a student number.', 'error'); return; }
+        if (!bookId) { showToast('Please select a book.', 'error'); return; }
+
+        const books = getBooks();
+        const b = books.find(x => x.id === bookId);
+        if (!b || b.availableCopies <= 0) {
+          showToast('Selected book has no available copies.', 'error');
+          return;
+        }
+
+        b.availableCopies -= 1;
+        localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
+
+        const txns = getTransactions();
+        const today = new Date();
+        const due = new Date();
+        due.setDate(today.getDate() + 7);
+
+        const newTxn = {
+          id: 'TXN-' + Math.floor(1000 + Math.random() * 9000),
+          studentNumber: studentNo,
+          bookId: b.id,
+          bookTitle: b.title,
+          bookAuthor: b.author,
+          borrowDate: today.toISOString().split('T')[0],
+          dueDate: due.toISOString().split('T')[0],
+          status: 'BORROWED'
+        };
+
+        txns.unshift(newTxn);
+        localStorage.setItem(STORAGE_TRANSACTIONS_KEY, JSON.stringify(txns));
+        showToast(`Loan registered for Student ${studentNo}!`, 'success');
+        render();
+      });
+
+      // Add book modal handlers
+      const modal = document.getElementById('addBookModal');
+      document.getElementById('openAddBookBtn').addEventListener('click', () => modal.classList.add('active'));
+      document.getElementById('closeAddBookBtn').addEventListener('click', () => modal.classList.remove('active'));
+      document.getElementById('cancelAddBookBtn').addEventListener('click', () => modal.classList.remove('active'));
+
+      document.getElementById('addBookForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const code = document.getElementById('newBookCode').value.trim();
+        const title = document.getElementById('newBookTitle').value.trim();
+        const author = document.getElementById('newBookAuthor').value.trim();
+        const cat = document.getElementById('newBookCategory').value;
+        const copies = parseInt(document.getElementById('newBookCopies').value, 10) || 1;
+
+        const books = getBooks();
+        books.push({
+          id: code,
+          isbn: '978-' + Math.floor(1000000000 + Math.random() * 9000000000),
+          title: title,
+          author: author,
+          category: cat,
+          location: 'Section ' + cat.substring(0, 3).toUpperCase(),
+          totalCopies: copies,
+          availableCopies: copies
+        });
+
+        localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
+        modal.classList.remove('active');
+        showToast(`Book "${title}" added to library inventory!`, 'success');
+        render();
+      });
+
+      // Logout handler
+      document.getElementById('adminLogoutBtn').addEventListener('click', function() {
+        sessionStorage.removeItem(SESSION_ADMIN_KEY);
+        showToast('Admin session terminated.', 'info');
+        setTimeout(() => window.location.href = 'admin-index.html', 500);
+      });
+
+      document.addEventListener('DOMContentLoaded', render);
+      render();
+    })();
+  </script>
+</body>
+</html>
+
