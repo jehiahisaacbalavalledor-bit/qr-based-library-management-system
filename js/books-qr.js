@@ -140,7 +140,10 @@
   function getBooksCatalog() {
     try {
       const stored = localStorage.getItem(STORAGE_BOOKS_KEY);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {}
     localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(DEFAULT_BOOKS));
     return DEFAULT_BOOKS;
@@ -207,28 +210,40 @@
         }
       }
 
-      // Generate Standardized Book QR Payload
+      // Generate Standardized Book QR Payload (Concise for fast scanning)
       const bookQrPayload = {
         type: 'CVSU_BOOK_QR',
         bookCode: book.bookCode,
-        accessionNo: book.accessionNo,
         callNo: book.callNo,
-        classification: book.classification,
-        title: book.title,
-        author: book.author,
-        category: book.category,
-        isRoomUseOnly: book.isRoomUseOnly ? 1 : 0
+        acc: book.accessionNo,
+        title: (book.title || '').substring(0, 36),
+        roomOnly: book.isRoomUseOnly ? 1 : 0
       };
 
       if (bookQrBox && typeof QRCode !== 'undefined') {
-        bookQrBox.innerHTML = '';
-        new QRCode(bookQrBox, {
-          text: JSON.stringify(bookQrPayload),
-          width: 165,
-          height: 165,
-          colorDark: '#00875a',
-          colorLight: '#ffffff'
-        });
+        try {
+          bookQrBox.innerHTML = '';
+          new QRCode(bookQrBox, {
+            text: JSON.stringify(bookQrPayload),
+            width: 165,
+            height: 165,
+            correctLevel: 1, // Level L (7%) for maximum reliability and scan speed
+            colorDark: '#00875a',
+            colorLight: '#ffffff'
+          });
+        } catch (qrErr) {
+          console.warn('QR Code generation notice:', qrErr);
+          // Fallback with simpler string if needed
+          bookQrBox.innerHTML = '';
+          new QRCode(bookQrBox, {
+            text: `CVSU:${book.bookCode}|${book.callNo}|${book.accessionNo}`,
+            width: 165,
+            height: 165,
+            correctLevel: 1,
+            colorDark: '#00875a',
+            colorLight: '#ffffff'
+          });
+        }
       }
     }
 
@@ -301,8 +316,10 @@
     }
 
     // Initial table & sticker render
-    renderSticker(books[0]);
     renderTable();
+    if (books && books.length > 0) {
+      renderSticker(books[0]);
+    }
 
     // Search and Filter Listeners
     const searchInput = document.getElementById('bookSearchInput');
