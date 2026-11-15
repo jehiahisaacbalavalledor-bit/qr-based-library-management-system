@@ -56,6 +56,23 @@ try {
     $borrowedCount = max(0, (int) $existing['total_copies'] - (int) $existing['available_copies']);
     $newAvailable  = max(0, $newTotal - $borrowedCount);
 
+    $marcInput = $input['marcTags'] ?? $input['marc_tags'] ?? null;
+    if (is_string($marcInput) && trim($marcInput) !== '') {
+        $marcJson = trim($marcInput);
+    } elseif (is_array($marcInput)) {
+        $marcJson = json_encode($marcInput, JSON_UNESCAPED_UNICODE);
+    } else {
+        $marcJson = json_encode([
+            '020' => $isbn !== '' ? $isbn : 'N/A',
+            '082' => $classification,
+            '100' => $author,
+            '245' => $title,
+            '264' => trim(($publisher !== '' ? $publisher : 'N/A') . ($pubYear ? ", {$pubYear}" : '')),
+            '650' => $category,
+            '852' => $callNo
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     $stmtUpdate = $pdo->prepare("
         UPDATE books
         SET title = ?,
@@ -66,6 +83,7 @@ try {
             classification_number = ?,
             publisher = ?,
             publication_year = ?,
+            marc_tags = ?,
             total_copies = ?,
             available_copies = ?,
             is_room_use_only = ?
@@ -80,6 +98,7 @@ try {
         $classification,
         $publisher !== '' ? $publisher : null,
         $pubYear,
+        $marcJson,
         $newTotal,
         $newAvailable,
         $isRoomUseOnly,

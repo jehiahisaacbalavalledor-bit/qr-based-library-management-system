@@ -4,6 +4,9 @@
  * GET /api/system/backup.php?format=sql|json
  */
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
+
+AuthGuard::enforceRoleIfAuthenticated(['Head Librarian', 'Library Admin', 'Admin']);
 
 $format = strtolower(trim($_GET['format'] ?? 'sql'));
 $timestamp = date('Y-m-d_His');

@@ -582,32 +582,50 @@
     // ========================================================================
     const adminForgotForm = document.getElementById('adminForgotPasswordForm');
     if (adminForgotForm) {
-      adminForgotForm.addEventListener('submit', function (e) {
+      adminForgotForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const empInput = document.getElementById('recoveryEmployeeId');
         const emailInput = document.getElementById('recoveryAdminEmail');
+        const newPwInput = document.getElementById('recoveryAdminNewPassword');
         const submitBtn = document.getElementById('submitAdminRecoveryBtn');
 
-        const empId = cleanStudentNumber(empInput.value).toLowerCase();
+        const empId = cleanStudentNumber(empInput.value);
         const email = (emailInput.value || '').trim().toLowerCase();
+        const newPassword = newPwInput ? newPwInput.value : '';
 
-        if (!empId || !email) {
-          showToast('Please provide both Employee ID and Email Address.', 'error');
+        if (!empId || !email || newPassword.length < 6) {
+          showToast('Provide Employee ID, Email, and a new password (min 6 chars).', 'error');
           return;
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerText = 'Verifying Record...';
+        submitBtn.innerText = 'Resetting Password...';
 
-        setTimeout(() => {
-          submitBtn.disabled = false;
-          submitBtn.innerText = 'Send Staff Reset Instructions';
+        try {
+          if (IS_HTTP) {
+            const res = await fetch(`${PUBLIC_BASE}api/auth/resetPassword.php`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userType: 'admin', employeeId: empId, email, newPassword })
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+              showToast(json.message, 'success');
+              setTimeout(() => { window.location.href = `${PUBLIC_BASE}admin/admin-index.html`; }, 1500);
+              return;
+            }
+            showToast(json.message || 'Could not reset password.', 'error');
+            return;
+          }
           showToast(`Recovery instructions dispatched to ${email}!`, 'success');
-          setTimeout(() => {
-            window.location.href = `${PUBLIC_BASE}admin/admin-index.html`;
-          }, 2000);
-        }, 600);
+          setTimeout(() => { window.location.href = `${PUBLIC_BASE}admin/admin-index.html`; }, 1500);
+        } catch (err) {
+          showToast('Network error while resetting password.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Reset Staff Password';
+        }
       });
     }
 
@@ -735,40 +753,58 @@
     // ========================================================================
     const forgotForm = document.getElementById('forgotPasswordForm');
     if (forgotForm) {
-      forgotForm.addEventListener('submit', function (e) {
+      forgotForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const studentInput = document.getElementById('recoveryStudentNumber');
         const emailInput = document.getElementById('recoveryEmail');
+        const newPwInput = document.getElementById('recoveryNewPassword');
         const submitBtn = document.getElementById('submitRecoveryBtn');
 
         const studentNo = cleanStudentNumber(studentInput.value);
         const email = emailInput.value.trim().toLowerCase();
+        const newPassword = newPwInput ? newPwInput.value : '';
 
-        if (!studentNo || !email) {
-          showToast('Please fill in both Student Number and Email Address.', 'error');
+        if (!studentNo || !email || newPassword.length < 6) {
+          showToast('Fill in Student Number, Email, and a new password (min 6 chars).', 'error');
           return;
         }
 
         submitBtn.disabled = true;
-        submitBtn.innerText = 'Verifying...';
+        submitBtn.innerText = 'Resetting Password...';
 
-        setTimeout(() => {
+        try {
+          if (IS_HTTP) {
+            const res = await fetch(`${PUBLIC_BASE}api/auth/resetPassword.php`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userType: 'student', studentNumber: studentNo, email, newPassword })
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+              showToast(json.message, 'success');
+              setTimeout(() => { window.location.href = `${PUBLIC_BASE}index.html`; }, 1500);
+              return;
+            }
+            showToast(json.message || 'Could not reset password.', 'error');
+            return;
+          }
           const users = getUsers();
           const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.email.toLowerCase() === email);
-
-          submitBtn.disabled = false;
-          submitBtn.innerText = 'Send Reset Link';
-
           if (matchedUser) {
-            showToast(`Password reset link sent to ${email}! Check your inbox.`, 'success');
-            setTimeout(() => {
-              window.location.href = `${PUBLIC_BASE}index.html`;
-            }, 2500);
+            matchedUser.password = newPassword;
+            saveUsers(users);
+            showToast(`Password reset for ${email}!`, 'success');
+            setTimeout(() => { window.location.href = `${PUBLIC_BASE}index.html`; }, 1500);
           } else {
             showToast('No matching student account found with those details.', 'error');
           }
-        }, 600);
+        } catch (err) {
+          showToast('Network error while resetting password.', 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Reset Student Password';
+        }
       });
     }
 

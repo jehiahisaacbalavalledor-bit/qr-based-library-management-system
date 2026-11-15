@@ -8,6 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -64,6 +65,7 @@ try {
         }
 
         // Set session variables for staff
+        AuthGuard::setAdminSession($admin);
         $_SESSION['admin_id'] = $admin['id'];
         $_SESSION['employee_id'] = $admin['employee_id'];
         $_SESSION['admin_name'] = $admin['full_name'];

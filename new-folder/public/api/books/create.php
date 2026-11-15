@@ -35,12 +35,23 @@ try {
     $accessionNo = trim($input['accessionNumber'] ?? $input['accession_number'] ?? '') ?: ('ACC-' . date('Y') . '-' . random_int(10000, 99999));
     $isbn = trim($input['isbn'] ?? '') ?: ('978-' . random_int(1000000000, 9999999999));
     $classification = trim($input['classification'] ?? '005.1');
+    $marcInput = $input['marcTags'] ?? $input['marc_tags'] ?? null;
+    $marcObj = is_array($marcInput) ? $marcInput : [
+        '020' => $isbn,
+        '082' => $classification,
+        '100' => $author,
+        '245' => $title,
+        '264' => trim(($publisher !== '' ? $publisher : 'CvSU Press') . ($pubYear ? ", {$pubYear}" : '')),
+        '650' => $category,
+        '852' => $callNo
+    ];
+    $marcJson = is_string($marcInput) && trim($marcInput) !== '' ? trim($marcInput) : json_encode($marcObj, JSON_UNESCAPED_UNICODE);
 
     $stmt = $pdo->prepare("
         INSERT INTO books
-            (book_code, accession_number, call_number, classification_number, isbn, title, author, category, publisher, publication_year, total_copies, available_copies, is_room_use_only, status)
+            (book_code, accession_number, call_number, classification_number, isbn, title, author, category, publisher, publication_year, marc_tags, total_copies, available_copies, is_room_use_only, status)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
     ");
     $stmt->execute([
         $bookCode,
@@ -53,6 +64,7 @@ try {
         $category,
         $publisher !== '' ? $publisher : null,
         $pubYear,
+        $marcJson,
         $copies,
         $copies,
         $isRoomUseOnly

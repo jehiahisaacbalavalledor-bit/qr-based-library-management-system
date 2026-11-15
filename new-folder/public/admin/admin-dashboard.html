@@ -870,9 +870,13 @@
               <input type="number" id="editBookCopies" class="form-control" min="1" max="100" required>
             </div>
           </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer; margin-bottom: 10px;">
             <input type="checkbox" id="editBookRoomUse"> Special / Thesis Collection (Room Use Only)
           </label>
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label class="form-label" style="font-size: 12px;">MARC21 Tags (JSON: 020 ISBN, 082 DDC, 100 Author, 245 Title, 264 Pub, 650 Subject, 852 Call #)</label>
+            <textarea id="editBookMarcTags" class="form-control" rows="3" style="font-family: monospace; font-size: 11.5px;"></textarea>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-tbl-sm" id="cancelEditBookBtn">Cancel</button>
@@ -983,6 +987,7 @@
             author: b.author,
             publisher: b.publisher || '',
             publicationYear: b.publication_year || '',
+            marcTags: b.marc_tags || '',
             category: b.category,
             location: b.call_number,
             totalCopies: Number(b.total_copies),
@@ -1117,6 +1122,15 @@
             document.getElementById('editBookCallNo').value = b.location;
             document.getElementById('editBookCopies').value = b.totalCopies;
             document.getElementById('editBookRoomUse').checked = Boolean(b.isRoomUseOnly);
+            const defaultMarc = JSON.stringify({
+              '020': b.isbn,
+              '100': b.author,
+              '245': b.title,
+              '264': [b.publisher || 'N/A', b.publicationYear || ''].filter(Boolean).join(', '),
+              '650': b.category,
+              '852': b.location
+            }, null, 2);
+            document.getElementById('editBookMarcTags').value = b.marcTags || defaultMarc;
             document.getElementById('editBookModal').classList.add('active');
           });
         });
@@ -1252,7 +1266,8 @@
           category: document.getElementById('editBookCategory').value.trim(),
           callNumber: document.getElementById('editBookCallNo').value.trim(),
           totalCopies: parseInt(document.getElementById('editBookCopies').value, 10) || 1,
-          isRoomUseOnly: document.getElementById('editBookRoomUse').checked
+          isRoomUseOnly: document.getElementById('editBookRoomUse').checked,
+          marcTags: document.getElementById('editBookMarcTags').value.trim()
         });
         showToast(res.message, res.ok ? 'success' : 'error');
         if (res.ok) {

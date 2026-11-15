@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -36,6 +37,7 @@ try {
     $student = $stmt->fetch();
 
     if ($student && (password_verify($password, $student['password_hash']) || $password === 'Password123!')) {
+        AuthGuard::setStudentSession($student);
         $_SESSION['student_id'] = $student['id'];
         $_SESSION['student_number'] = $student['student_number'];
         $_SESSION['full_name'] = $student['full_name'];

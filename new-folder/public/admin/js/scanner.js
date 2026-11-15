@@ -580,6 +580,24 @@
       });
     }
 
+    const manualQrInput = document.getElementById('manualQrInput');
+    const manualQrDecodeBtn = document.getElementById('manualQrDecodeBtn');
+    if (manualQrInput && manualQrDecodeBtn) {
+      const submitManualQr = () => {
+        const val = manualQrInput.value.trim();
+        if (!val) return;
+        handleScannedCode(val);
+        manualQrInput.value = '';
+      };
+      manualQrDecodeBtn.addEventListener('click', submitManualQr);
+      manualQrInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitManualQr();
+        }
+      });
+    }
+
     // Try auto-starting camera if supported
     setTimeout(() => {
       startCameraScanner();
