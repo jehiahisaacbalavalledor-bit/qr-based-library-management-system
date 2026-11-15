@@ -153,6 +153,23 @@
     localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
   }
 
+  function mapServerBookToLocal(row) {
+    return {
+      id: Number(row.id) || 0,
+      bookCode: row.book_code || row.bookCode || '',
+      accessionNo: row.accession_number || row.accessionNo || 'N/A',
+      title: row.title || 'Untitled Book',
+      author: row.author || 'Unknown Author',
+      callNo: row.call_number || row.callNo || 'N/A',
+      classification: row.classification_number || row.classification || '000',
+      category: row.category || 'General Collection',
+      totalCopies: parseInt(row.total_copies ?? row.totalCopies ?? 1, 10) || 1,
+      availableCopies: parseInt(row.available_copies ?? row.availableCopies ?? 0, 10) || 0,
+      isRoomUseOnly: Boolean(Number(row.is_room_use_only ?? row.isRoomUseOnly ?? 0)),
+      publicationYear: row.publication_year || row.publicationYear || new Date().getFullYear()
+    };
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     let books = getBooksCatalog();
     let currentSelectedBook = books[0];
@@ -321,6 +338,23 @@
       renderSticker(books[0]);
     }
 
+    // Sync live catalog from MySQL when running over HTTP
+    async function syncCatalogFromServer() {
+      const engine = window.CvsuCirculationEngine;
+      if (!engine || !engine.API_BASE || typeof engine.syncFromServer !== 'function') return;
+      const syncResult = await engine.syncFromServer();
+      if (syncResult && syncResult.ok && Array.isArray(syncResult.catalog) && syncResult.catalog.length > 0) {
+        books = syncResult.catalog.map(mapServerBookToLocal);
+        saveBooksCatalog(books);
+        const searchVal = document.getElementById('bookSearchInput')?.value || '';
+        const catVal = document.getElementById('categoryFilter')?.value || '';
+        renderTable(searchVal, catVal);
+        const match = books.find(b => b.bookCode === (currentSelectedBook && currentSelectedBook.bookCode));
+        renderSticker(match || books[0]);
+      }
+    }
+    syncCatalogFromServer();
+
     // Search and Filter Listeners
     const searchInput = document.getElementById('bookSearchInput');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -396,8 +430,10 @@
     }
 
     if (newBookForm) {
-      newBookForm.addEventListener('submit', function (e) {
+      newBookForm.addEventListener('submit', async function (e) {
         e.preventDefault();
+        const submitBtn = newBookForm.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn ? submitBtn.textContent : '';
         const newBook = {
           id: books.length + 1,
           bookCode: document.getElementById('newBookCode').value.trim(),
@@ -413,13 +449,47 @@
           publicationYear: new Date().getFullYear()
         };
 
-        books.unshift(newBook);
+        let savedBook = newBook;
+        const engine = window.CvsuCirculationEngine;
+        if (engine && engine.API_BASE && typeof engine.addBookRemote === 'function') {
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+          }
+          try {
+            const result = await engine.addBookRemote({
+              bookCode: newBook.bookCode,
+              accessionNumber: newBook.accessionNo,
+              title: newBook.title,
+              author: newBook.author,
+              callNumber: newBook.callNo,
+              classification: newBook.classification,
+              category: newBook.category,
+              totalCopies: newBook.totalCopies,
+              isRoomUseOnly: newBook.isRoomUseOnly
+            });
+            if (!result || !result.ok) {
+              showToast((result && result.message) || 'Failed to save book to database.', 'error');
+              return;
+            }
+            if (result.data) {
+              savedBook = mapServerBookToLocal(result.data);
+            }
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+            }
+          }
+        }
+
+        books.unshift(savedBook);
         saveBooksCatalog(books);
         renderTable();
-        renderSticker(newBook);
+        renderSticker(savedBook);
         addBookModal.classList.remove('active');
         newBookForm.reset();
-        showToast(`Successfully added "${newBook.title}" to catalog!`, 'success');
+        showToast(`Successfully added "${savedBook.title}" to catalog!`, 'success');
       });
     }
 
