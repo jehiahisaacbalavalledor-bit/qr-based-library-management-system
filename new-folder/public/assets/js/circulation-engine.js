@@ -447,6 +447,7 @@
             bookTitle: l.title,
             callNo: l.call_number,
             loanType: l.loan_type,
+            renewalCount: Number(l.renewal_count || 0),
             borrowDate: l.borrow_date,
             dueDate: l.due_date,
             dueTime: l.loan_type === 'overnight' ? '10:00 AM' : '17:00',
@@ -514,6 +515,63 @@
     }
   }
 
+  function renewBook(ref, extensionType = '1_day', todayStr = getTodayISO()) {
+    const loans = getLoans();
+    const idx = loans.findIndex(l => l.ref === ref);
+    if (idx === -1) return { ok: false, message: `Transaction ${ref} not found.` };
+
+    const loan = loans[idx];
+    if (loan.status !== 'borrowed' && loan.status !== 'overdue') {
+      return { ok: false, message: `Transaction ${ref} is already closed (${loan.status}).` };
+    }
+    if (Number(loan.renewalCount || 0) >= 2) {
+      return { ok: false, message: `Maximum of 2 renewals already reached for ${ref}.` };
+    }
+    if (getUnpaidFinesForStudent(loan.studentNo).length > 0) {
+      return { ok: false, message: `Cannot renew: ${loan.studentName} has unpaid fines.` };
+    }
+    if (loan.dueDate < todayStr) {
+      return { ok: false, message: `Cannot renew overdue loan ${ref}. Process return/fine settlement first.` };
+    }
+
+    const baseDate = loan.dueDate >= todayStr ? loan.dueDate : todayStr;
+    const dueInfo = computeDueDate(baseDate, extensionType);
+    loan.dueDate = dueInfo.dueDate;
+    loan.dueTime = dueInfo.dueTime;
+    loan.loanType = extensionType;
+    loan.renewalCount = Number(loan.renewalCount || 0) + 1;
+    saveLoans(loans);
+
+    return {
+      ok: true,
+      message: `Loan ${ref} extended to ${loan.dueDate} (${dueInfo.label}).`,
+      loan
+    };
+  }
+
+  async function renewRemote(transactionCode, extensionType = '1_day', today = getTodayISO()) {
+    if (!API_BASE) return renewBook(transactionCode, extensionType, today);
+    try {
+      const res = await fetch(`${API_BASE}circulation/renew.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionCode, extensionType, today })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        await syncFromServer();
+        return {
+          ok: true,
+          message: json.message,
+          loan: json.data
+        };
+      }
+      return { ok: false, message: json.message || 'Renewal failed.' };
+    } catch (err) {
+      return renewBook(transactionCode, extensionType, today);
+    }
+  }
+
   async function returnRemote(transactionCode, returnDate, bookCondition) {
     if (!API_BASE) return returnBook(transactionCode, returnDate, bookCondition);
     try {
@@ -572,6 +630,80 @@
     return { ok: false, message: json.message };
   }
 
+  async function updateBookRemote(bookData) {
+    if (!API_BASE) return { ok: false, offline: true };
+    const res = await fetch(`${API_BASE}books/update.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookData)
+    });
+    const json = await res.json();
+    if (json.status === 'success') {
+      await syncFromServer();
+      return { ok: true, message: json.message, data: json.data };
+    }
+    return { ok: false, message: json.message || 'Could not update book.' };
+  }
+
+  async function deleteBookRemote(identifier) {
+    if (!API_BASE) return { ok: false, offline: true };
+    const payload = typeof identifier === 'number' ? { id: identifier } : { bookCode: identifier };
+    const res = await fetch(`${API_BASE}books/delete.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (json.status === 'success') {
+      await syncFromServer();
+      return { ok: true, message: json.message };
+    }
+    return { ok: false, message: json.message || 'Could not delete book.' };
+  }
+
+  async function listStudentsRemote() {
+    if (!API_BASE) return { ok: false, offline: true, data: [] };
+    try {
+      const res = await fetch(`${API_BASE}students/list.php`);
+      const json = await res.json();
+      if (json.status === 'success' && Array.isArray(json.data)) {
+        return { ok: true, data: json.data };
+      }
+      return { ok: false, message: json.message || 'Failed to load students.', data: [] };
+    } catch (err) {
+      return { ok: false, message: err.message, data: [] };
+    }
+  }
+
+  async function updateStudentRemote(studentData) {
+    if (!API_BASE) return { ok: false, offline: true };
+    const res = await fetch(`${API_BASE}students/update.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(studentData)
+    });
+    const json = await res.json();
+    if (json.status === 'success') {
+      return { ok: true, message: json.message, data: json.data };
+    }
+    return { ok: false, message: json.message || 'Could not update student.' };
+  }
+
+  async function deleteStudentRemote(identifier) {
+    if (!API_BASE) return { ok: false, offline: true };
+    const payload = typeof identifier === 'number' ? { id: identifier } : { studentNumber: identifier };
+    const res = await fetch(`${API_BASE}students/delete.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (json.status === 'success') {
+      return { ok: true, message: json.message };
+    }
+    return { ok: false, message: json.message || 'Could not delete student.' };
+  }
+
   global.CvsuCirculationEngine = {
     MAX_ACTIVE_BOOKS,
     FINE_RATE_PER_DAY,
@@ -586,13 +718,20 @@
     getActiveLoansForStudent,
     getUnpaidFinesForStudent,
     checkoutBook,
+    renewBook,
     returnBook,
     settleFine,
     getDashboardStats,
     syncFromServer,
     borrowRemote,
+    renewRemote,
     returnRemote,
     settleFineRemote,
-    addBookRemote
+    addBookRemote,
+    updateBookRemote,
+    deleteBookRemote,
+    listStudentsRemote,
+    updateStudentRemote,
+    deleteStudentRemote
   };
 })(window);

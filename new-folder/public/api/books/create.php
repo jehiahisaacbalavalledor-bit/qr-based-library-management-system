@@ -19,6 +19,9 @@ $title         = trim($input['title'] ?? '');
 $author        = trim($input['author'] ?? '');
 $category      = trim($input['category'] ?? 'Computer Science & IT');
 $callNo        = trim($input['callNumber'] ?? $input['call_number'] ?? ('QA ' . random_int(100, 999) . ' .CVSU'));
+$publisher     = trim($input['publisher'] ?? '');
+$pubYearRaw    = trim((string) ($input['publicationYear'] ?? $input['publication_year'] ?? ''));
+$pubYear       = preg_match('/^\d{4}$/', $pubYearRaw) ? (int) $pubYearRaw : null;
 $copies        = max(1, (int) ($input['totalCopies'] ?? $input['total_copies'] ?? 1));
 $isRoomUseOnly = !empty($input['isRoomUseOnly']) ? 1 : 0;
 
@@ -29,15 +32,15 @@ if (empty($bookCode) || empty($title) || empty($author)) {
 }
 
 try {
-    $accessionNo = 'ACC-' . date('Y') . '-' . random_int(10000, 99999);
-    $isbn = trim($input['isbn'] ?? ('978-' . random_int(1000000000, 9999999999)));
+    $accessionNo = trim($input['accessionNumber'] ?? $input['accession_number'] ?? '') ?: ('ACC-' . date('Y') . '-' . random_int(10000, 99999));
+    $isbn = trim($input['isbn'] ?? '') ?: ('978-' . random_int(1000000000, 9999999999));
     $classification = trim($input['classification'] ?? '005.1');
 
     $stmt = $pdo->prepare("
         INSERT INTO books
-            (book_code, accession_number, call_number, classification_number, isbn, title, author, category, total_copies, available_copies, is_room_use_only, status)
+            (book_code, accession_number, call_number, classification_number, isbn, title, author, category, publisher, publication_year, total_copies, available_copies, is_room_use_only, status)
         VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'available')
     ");
     $stmt->execute([
         $bookCode,
@@ -48,6 +51,8 @@ try {
         $title,
         $author,
         $category,
+        $publisher !== '' ? $publisher : null,
+        $pubYear,
         $copies,
         $copies,
         $isRoomUseOnly
@@ -61,9 +66,13 @@ try {
             'book_code'        => $bookCode,
             'accession_number' => $accessionNo,
             'call_number'      => $callNo,
+            'classification_number' => $classification,
+            'isbn'             => $isbn,
             'title'            => $title,
             'author'           => $author,
             'category'         => $category,
+            'publisher'        => $publisher !== '' ? $publisher : null,
+            'publication_year' => $pubYear,
             'total_copies'     => $copies,
             'available_copies' => $copies,
             'is_room_use_only' => $isRoomUseOnly

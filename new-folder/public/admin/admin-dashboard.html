@@ -550,15 +550,120 @@
                 <th>Code</th>
                 <th>ISBN</th>
                 <th>Title & Author</th>
+                <th>Publisher / Year</th>
                 <th>Category</th>
                 <th>Shelf Location</th>
                 <th>Available / Total</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="adminBooksTbody">
               <!-- Rendered via JS -->
             </tbody>
           </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Registered Students / Borrowers Management -->
+    <section class="admin-card" id="studentsManagementSection" style="margin-top: 24px;">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
+        <h3>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Registered Students / Borrowers
+        </h3>
+        <input type="text" id="studentSearchInput" class="form-control" placeholder="Search by student no., name, or course..." style="max-width: 280px; padding: 6px 10px; font-size: 12.5px;">
+      </div>
+      <div class="admin-card-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Student No.</th>
+                <th>Full Name</th>
+                <th>Course & Year</th>
+                <th>Contact & Email</th>
+                <th>Active Loans</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminStudentsTbody">
+              <tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 18px;">Loading registered students...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports Generator & Bulk CSV Import/Export -->
+    <section class="admin-card" id="reportsAndImportSection" style="margin-top: 24px;">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
+        <h3>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          Library Reports (Print / PDF / Excel) &amp; Bulk CSV Import / Export
+        </h3>
+      </div>
+      <div class="admin-card-body">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px;">
+          <div style="min-width: 220px; flex: 1;">
+            <label class="form-label" style="font-size: 12px; display: block; margin-bottom: 4px;">Report Type</label>
+            <select id="reportTypeSelect" class="form-control" style="background: #ffffff;">
+              <option value="daily_borrowing">Daily Borrowing Report</option>
+              <option value="daily_return">Daily Return Report</option>
+              <option value="monthly_transactions">Monthly Transaction Report</option>
+              <option value="overdue_books">Overdue Books &amp; Fines Report</option>
+              <option value="book_inventory">Book Inventory Report</option>
+              <option value="student_borrowing">Student Borrowing Summary Report</option>
+            </select>
+          </div>
+          <div id="reportDateGroup">
+            <label class="form-label" style="font-size: 12px; display: block; margin-bottom: 4px;">Date</label>
+            <input type="date" id="reportDateInput" class="form-control">
+          </div>
+          <div id="reportMonthGroup" style="display: none;">
+            <label class="form-label" style="font-size: 12px; display: block; margin-bottom: 4px;">Month</label>
+            <input type="month" id="reportMonthInput" class="form-control">
+          </div>
+          <button type="button" class="btn-green" id="generateReportBtn" style="padding: 8px 14px; font-size: 12.5px;">Generate Report</button>
+          <button type="button" class="btn-tbl-sm" id="exportReportCsvBtn" style="padding: 8px 12px; font-size: 12.5px;">Export Excel (CSV)</button>
+          <button type="button" class="btn-tbl-sm" id="printReportBtn" style="padding: 8px 12px; font-size: 12.5px;">Print / Save PDF</button>
+        </div>
+
+        <div id="reportMetaBanner" style="font-size: 12.5px; color: #475569; margin-bottom: 10px; font-weight: 600;"></div>
+
+        <div class="table-responsive" style="margin-bottom: 20px;">
+          <table class="admin-table">
+            <thead id="reportPreviewThead"></thead>
+            <tbody id="reportPreviewTbody">
+              <tr><td style="text-align: center; color: #94a3b8; padding: 16px;">Select a report type and click <strong>Generate Report</strong>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;">
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Books Catalog CSV Import / Export</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <button type="button" class="btn-tbl-sm" id="exportBooksCsvBtn">Export Books CSV</button>
+              <button type="button" class="btn-tbl-sm" id="downloadBookTplBtn">CSV Template</button>
+              <label class="btn-green" style="padding: 5px 10px; font-size: 12px; cursor: pointer; margin: 0;">
+                Import Books CSV
+                <input type="file" id="importBooksFile" accept=".csv" style="display: none;">
+              </label>
+            </div>
+          </div>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;">
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Students Records CSV Import / Export</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <button type="button" class="btn-tbl-sm" id="exportStudentsCsvBtn">Export Students CSV</button>
+              <button type="button" class="btn-tbl-sm" id="downloadStudentTplBtn">CSV Template</button>
+              <label class="btn-green" style="padding: 5px 10px; font-size: 12px; cursor: pointer; margin: 0;">
+                Import Students CSV
+                <input type="file" id="importStudentsFile" accept=".csv" style="display: none;">
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -574,35 +679,187 @@
       </div>
       <form id="addBookForm">
         <div class="modal-body">
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label class="form-label" style="font-size: 12px;">Book Code (Barcode)</label>
-            <input type="text" id="newBookCode" class="form-control" required placeholder="e.g. BK-9050">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Book Code (Barcode)</label>
+              <input type="text" id="newBookCode" class="form-control" required placeholder="e.g. BK-9050">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">ISBN</label>
+              <input type="text" id="newBookIsbn" class="form-control" placeholder="e.g. 978-0132350884">
+            </div>
           </div>
-          <div class="form-group" style="margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 10px;">
             <label class="form-label" style="font-size: 12px;">Book Title</label>
             <input type="text" id="newBookTitle" class="form-control" required placeholder="e.g. Software Architecture in Practice">
           </div>
-          <div class="form-group" style="margin-bottom: 12px;">
+          <div class="form-group" style="margin-bottom: 10px;">
             <label class="form-label" style="font-size: 12px;">Author(s)</label>
             <input type="text" id="newBookAuthor" class="form-control" required placeholder="e.g. Len Bass, Paul Clements">
           </div>
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label class="form-label" style="font-size: 12px;">Category</label>
-            <select id="newBookCategory" class="form-control" style="background: #ffffff;">
-              <option value="CS & IT">CS & IT</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Business">Business</option>
-              <option value="General Education">General Education</option>
-            </select>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Publisher</label>
+              <input type="text" id="newBookPublisher" class="form-control" placeholder="e.g. Pearson / Addison-Wesley">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Publication Year</label>
+              <input type="number" id="newBookYear" class="form-control" min="1900" max="2099" placeholder="e.g. 2024">
+            </div>
           </div>
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label class="form-label" style="font-size: 12px;">Total Copies</label>
-            <input type="number" id="newBookCopies" class="form-control" min="1" max="50" value="5" required>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 100px; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Category</label>
+              <select id="newBookCategory" class="form-control" style="background: #ffffff;">
+                <option value="CS & IT">CS & IT</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Business">Business</option>
+                <option value="General Education">General Education</option>
+                <option value="Thesis / Special Collection">Thesis / Special Collection</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Call Number</label>
+              <input type="text" id="newBookCallNo" class="form-control" placeholder="e.g. QA 76.6 .C67">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Copies</label>
+              <input type="number" id="newBookCopies" class="form-control" min="1" max="50" value="5" required>
+            </div>
           </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="newBookRoomUse"> Special / Thesis Collection (Room Use Only)
+          </label>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-tbl-sm" id="cancelAddBookBtn">Cancel</button>
           <button type="submit" class="btn-green">Add Book</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Book -->
+  <div class="modal-overlay" id="editBookModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h4 style="margin: 0; font-size: 16px;">Edit Book Record</h4>
+        <button class="modal-close-btn" id="closeEditBookBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <form id="editBookForm">
+        <input type="hidden" id="editBookCode">
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Book Code</label>
+              <input type="text" id="editBookCodeDisplay" class="form-control" disabled>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">ISBN</label>
+              <input type="text" id="editBookIsbn" class="form-control">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px;">Book Title</label>
+            <input type="text" id="editBookTitle" class="form-control" required>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px;">Author(s)</label>
+            <input type="text" id="editBookAuthor" class="form-control" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Publisher</label>
+              <input type="text" id="editBookPublisher" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Publication Year</label>
+              <input type="number" id="editBookYear" class="form-control" min="1900" max="2099">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 100px; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Category</label>
+              <input type="text" id="editBookCategory" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Call Number</label>
+              <input type="text" id="editBookCallNo" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Total Copies</label>
+              <input type="number" id="editBookCopies" class="form-control" min="1" max="100" required>
+            </div>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="editBookRoomUse"> Special / Thesis Collection (Room Use Only)
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-tbl-sm" id="cancelEditBookBtn">Cancel</button>
+          <button type="submit" class="btn-green">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Student -->
+  <div class="modal-overlay" id="editStudentModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h4 style="margin: 0; font-size: 16px;">Edit Student Record</h4>
+        <button class="modal-close-btn" id="closeEditStudentBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <form id="editStudentForm">
+        <input type="hidden" id="editStudentNumber">
+        <div class="modal-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Student Number</label>
+              <input type="text" id="editStudentNumberDisplay" class="form-control" disabled>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Account Status</label>
+              <select id="editStudentStatus" class="form-control" style="background: #ffffff;">
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="graduated">Graduated</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label" style="font-size: 12px;">Full Name</label>
+            <input type="text" id="editStudentName" class="form-control" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Email Address</label>
+              <input type="email" id="editStudentEmail" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Mobile Number</label>
+              <input type="text" id="editStudentMobile" class="form-control" required>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Course / Program</label>
+              <input type="text" id="editStudentCourse" class="form-control" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Year Level</label>
+              <select id="editStudentYear" class="form-control" style="background: #ffffff;">
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-tbl-sm" id="cancelEditStudentBtn">Cancel</button>
+          <button type="submit" class="btn-green">Save Student</button>
         </div>
       </form>
     </div>
@@ -645,6 +902,8 @@
             isbn: b.isbn || 'N/A',
             title: b.title,
             author: b.author,
+            publisher: b.publisher || '',
+            publicationYear: b.publication_year || '',
             category: b.category,
             location: b.call_number,
             totalCopies: Number(b.total_copies),
@@ -751,11 +1010,50 @@
             <td><strong style="font-family: monospace;">${b.id}</strong></td>
             <td>${b.isbn}</td>
             <td><strong>${b.title}</strong><div style="font-size: 11.5px; color: #64748b;">${b.author}</div></td>
+            <td>${b.publisher || '<span style="color:#94a3b8;">N/A</span>'}<div style="font-size: 11.5px; color: #64748b;">${b.publicationYear || '—'}</div></td>
             <td><span class="badge-status badge-borrowed">${b.category}</span></td>
             <td>${b.location} ${b.isRoomUseOnly ? '<span style="color:#b45309;font-size:11px;font-weight:700;">(Room Use)</span>' : ''}</td>
             <td><strong style="color: ${b.availableCopies > 0 ? '#16a34a' : '#dc2626'};">${b.availableCopies}</strong> / ${b.totalCopies}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn-tbl-sm btn-edit-book" data-code="${b.id}">Edit</button>
+                <button type="button" class="btn-tbl-sm btn-delete-book" data-code="${b.id}" style="color:#dc2626;border-color:#fecaca;">Delete</button>
+              </div>
+            </td>
           </tr>
         `).join('');
+
+        booksTbody.querySelectorAll('.btn-edit-book').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const b = books.find(x => x.id === this.getAttribute('data-code'));
+            if (!b) return;
+            document.getElementById('editBookCode').value = b.id;
+            document.getElementById('editBookCodeDisplay').value = b.id;
+            document.getElementById('editBookIsbn').value = b.isbn === 'N/A' ? '' : b.isbn;
+            document.getElementById('editBookTitle').value = b.title;
+            document.getElementById('editBookAuthor').value = b.author;
+            document.getElementById('editBookPublisher').value = b.publisher || '';
+            document.getElementById('editBookYear').value = b.publicationYear || '';
+            document.getElementById('editBookCategory').value = b.category;
+            document.getElementById('editBookCallNo').value = b.location;
+            document.getElementById('editBookCopies').value = b.totalCopies;
+            document.getElementById('editBookRoomUse').checked = Boolean(b.isRoomUseOnly);
+            document.getElementById('editBookModal').classList.add('active');
+          });
+        });
+
+        booksTbody.querySelectorAll('.btn-delete-book').forEach(btn => {
+          btn.addEventListener('click', async function() {
+            const code = this.getAttribute('data-code');
+            if (!confirm(`Delete book ${code} from catalog?`)) return;
+            const engine = window.CvsuCirculationEngine;
+            if (engine && engine.API_BASE) {
+              const res = await engine.deleteBookRemote(code);
+              showToast(res.message, res.ok ? 'success' : 'error');
+              if (res.ok) render();
+            }
+          });
+        });
       }
 
       // Issue book handler (Live MySQL + 2-Book Limit + Room-Use-Only)
@@ -799,22 +1097,33 @@
       document.getElementById('addBookForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const code = document.getElementById('newBookCode').value.trim();
+        const isbn = document.getElementById('newBookIsbn').value.trim();
         const title = document.getElementById('newBookTitle').value.trim();
         const author = document.getElementById('newBookAuthor').value.trim();
+        const publisher = document.getElementById('newBookPublisher').value.trim();
+        const pubYear = document.getElementById('newBookYear').value.trim();
         const cat = document.getElementById('newBookCategory').value;
+        const callNo = document.getElementById('newBookCallNo').value.trim();
         const copies = parseInt(document.getElementById('newBookCopies').value, 10) || 1;
+        const isRoomUseOnly = document.getElementById('newBookRoomUse').checked;
 
         const engine = window.CvsuCirculationEngine;
         if (engine && engine.API_BASE) {
           const res = await engine.addBookRemote({
             bookCode: code,
+            isbn: isbn,
             title: title,
             author: author,
+            publisher: publisher,
+            publicationYear: pubYear,
             category: cat,
-            totalCopies: copies
+            callNumber: callNo || undefined,
+            totalCopies: copies,
+            isRoomUseOnly: isRoomUseOnly
           });
           if (res.ok) {
             modal.classList.remove('active');
+            this.reset();
             showToast(res.message, 'success');
             render();
             return;
@@ -827,19 +1136,161 @@
         const books = getBooksList();
         books.push({
           id: code,
-          isbn: '978-' + Math.floor(1000000000 + Math.random() * 9000000000),
+          isbn: isbn || ('978-' + Math.floor(1000000000 + Math.random() * 9000000000)),
           title: title,
           author: author,
+          publisher: publisher,
+          publicationYear: pubYear,
           category: cat,
-          location: 'Section ' + cat.substring(0, 3).toUpperCase(),
+          location: callNo || ('Section ' + cat.substring(0, 3).toUpperCase()),
           totalCopies: copies,
-          availableCopies: copies
+          availableCopies: copies,
+          isRoomUseOnly: isRoomUseOnly
         });
 
         localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
         modal.classList.remove('active');
+        this.reset();
         showToast(`Book "${title}" added to library inventory!`, 'success');
         render();
+      });
+
+      // Edit Book modal handlers
+      const editBookModal = document.getElementById('editBookModal');
+      document.getElementById('closeEditBookBtn').addEventListener('click', () => editBookModal.classList.remove('active'));
+      document.getElementById('cancelEditBookBtn').addEventListener('click', () => editBookModal.classList.remove('active'));
+      document.getElementById('editBookForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const engine = window.CvsuCirculationEngine;
+        if (!engine || !engine.API_BASE) return;
+        const res = await engine.updateBookRemote({
+          bookCode: document.getElementById('editBookCode').value.trim(),
+          isbn: document.getElementById('editBookIsbn').value.trim(),
+          title: document.getElementById('editBookTitle').value.trim(),
+          author: document.getElementById('editBookAuthor').value.trim(),
+          publisher: document.getElementById('editBookPublisher').value.trim(),
+          publicationYear: document.getElementById('editBookYear').value.trim(),
+          category: document.getElementById('editBookCategory').value.trim(),
+          callNumber: document.getElementById('editBookCallNo').value.trim(),
+          totalCopies: parseInt(document.getElementById('editBookCopies').value, 10) || 1,
+          isRoomUseOnly: document.getElementById('editBookRoomUse').checked
+        });
+        showToast(res.message, res.ok ? 'success' : 'error');
+        if (res.ok) {
+          editBookModal.classList.remove('active');
+          render();
+        }
+      });
+
+      // Registered Students Management
+      let cachedStudents = [];
+      function renderStudentsTable(query = '') {
+        const tbody = document.getElementById('adminStudentsTbody');
+        if (!tbody) return;
+        const q = query.trim().toLowerCase();
+        const filtered = cachedStudents.filter(s => {
+          if (!q) return true;
+          return (
+            String(s.student_number || '').toLowerCase().includes(q) ||
+            String(s.full_name || '').toLowerCase().includes(q) ||
+            String(s.course || '').toLowerCase().includes(q) ||
+            String(s.email || '').toLowerCase().includes(q)
+          );
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:18px;">No student records found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(s => {
+          const statusColor = s.account_status === 'active' ? '#16a34a' : (s.account_status === 'suspended' ? '#dc2626' : '#64748b');
+          return `
+            <tr>
+              <td><strong style="font-family:monospace;">${s.student_number}</strong></td>
+              <td><strong>${s.full_name}</strong><div style="font-size:11.5px;color:#64748b;">${s.campus || 'Imus Campus'}</div></td>
+              <td>${s.course}<div style="font-size:11.5px;color:#64748b;">${s.year_level}</div></td>
+              <td>${s.mobile_number}<div style="font-size:11.5px;color:#64748b;">${s.email}</div></td>
+              <td><strong>${s.active_loans_count || 0}</strong> / 2</td>
+              <td><span style="font-weight:700;font-size:11.5px;color:${statusColor};text-transform:uppercase;">${s.account_status}</span></td>
+              <td>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn-tbl-sm btn-edit-student" data-sno="${s.student_number}">Edit</button>
+                  <button type="button" class="btn-tbl-sm btn-delete-student" data-sno="${s.student_number}" style="color:#dc2626;border-color:#fecaca;">Delete</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        tbody.querySelectorAll('.btn-edit-student').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const s = cachedStudents.find(x => x.student_number === this.getAttribute('data-sno'));
+            if (!s) return;
+            document.getElementById('editStudentNumber').value = s.student_number;
+            document.getElementById('editStudentNumberDisplay').value = s.student_number;
+            document.getElementById('editStudentStatus').value = s.account_status || 'active';
+            document.getElementById('editStudentName').value = s.full_name || '';
+            document.getElementById('editStudentEmail').value = s.email || '';
+            document.getElementById('editStudentMobile').value = s.mobile_number || '';
+            document.getElementById('editStudentCourse').value = s.course || '';
+            document.getElementById('editStudentYear').value = s.year_level || '1st Year';
+            document.getElementById('editStudentModal').classList.add('active');
+          });
+        });
+
+        tbody.querySelectorAll('.btn-delete-student').forEach(btn => {
+          btn.addEventListener('click', async function() {
+            const sno = this.getAttribute('data-sno');
+            if (!confirm(`Delete student ${sno}?`)) return;
+            const engine = window.CvsuCirculationEngine;
+            if (!engine || !engine.API_BASE) return;
+            const res = await engine.deleteStudentRemote(sno);
+            showToast(res.message, res.ok ? 'success' : 'error');
+            if (res.ok) await loadStudents();
+          });
+        });
+      }
+
+      async function loadStudents() {
+        const engine = window.CvsuCirculationEngine;
+        if (!engine || !engine.API_BASE) return;
+        const res = await engine.listStudentsRemote();
+        if (res.ok) {
+          cachedStudents = res.data;
+          const q = document.getElementById('studentSearchInput')?.value || '';
+          renderStudentsTable(q);
+        }
+      }
+
+      const studentSearchInput = document.getElementById('studentSearchInput');
+      if (studentSearchInput) {
+        studentSearchInput.addEventListener('input', function() {
+          renderStudentsTable(this.value);
+        });
+      }
+
+      const editStudentModal = document.getElementById('editStudentModal');
+      document.getElementById('closeEditStudentBtn').addEventListener('click', () => editStudentModal.classList.remove('active'));
+      document.getElementById('cancelEditStudentBtn').addEventListener('click', () => editStudentModal.classList.remove('active'));
+      document.getElementById('editStudentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const engine = window.CvsuCirculationEngine;
+        if (!engine || !engine.API_BASE) return;
+        const res = await engine.updateStudentRemote({
+          studentNumber: document.getElementById('editStudentNumber').value.trim(),
+          accountStatus: document.getElementById('editStudentStatus').value,
+          fullName: document.getElementById('editStudentName').value.trim(),
+          email: document.getElementById('editStudentEmail').value.trim(),
+          mobileNumber: document.getElementById('editStudentMobile').value.trim(),
+          course: document.getElementById('editStudentCourse').value.trim(),
+          yearLevel: document.getElementById('editStudentYear').value
+        });
+        showToast(res.message, res.ok ? 'success' : 'error');
+        if (res.ok) {
+          editStudentModal.classList.remove('active');
+          await loadStudents();
+        }
       });
 
       // Logout handler
@@ -855,8 +1306,242 @@
           window.CvsuCirculationEngine.syncFromServer().then(res => {
             if (res && res.ok) render();
           });
+          loadStudents();
         }
+        initReportsAndCsv();
       });
+
+      function initReportsAndCsv() {
+        const typeEl = document.getElementById('reportTypeSelect');
+        const dateEl = document.getElementById('reportDateInput');
+        const monthEl = document.getElementById('reportMonthInput');
+        const dateGroup = document.getElementById('reportDateGroup');
+        const monthGroup = document.getElementById('reportMonthGroup');
+        const thead = document.getElementById('reportPreviewThead');
+        const tbody = document.getElementById('reportPreviewTbody');
+        const metaBanner = document.getElementById('reportMetaBanner');
+        if (!typeEl || !dateEl || !monthEl) return;
+
+        const now = new Date();
+        const todayIso = now.toISOString().slice(0, 10);
+        dateEl.value = todayIso;
+        monthEl.value = todayIso.slice(0, 7);
+
+        let lastReport = null;
+
+        function toggleFilterInputs() {
+          const t = typeEl.value;
+          const isMonthly = t === 'monthly_transactions';
+          const needsDate = t === 'daily_borrowing' || t === 'daily_return' || t === 'overdue_books';
+          dateGroup.style.display = needsDate ? 'block' : 'none';
+          monthGroup.style.display = isMonthly ? 'block' : 'none';
+        }
+        typeEl.addEventListener('change', toggleFilterInputs);
+        toggleFilterInputs();
+
+        function escapeCsvCell(v) {
+          const s = String(v ?? '');
+          return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }
+
+        function downloadCsv(filename, columns, rows) {
+          const lines = [columns.map(escapeCsvCell).join(',')];
+          rows.forEach(r => lines.push(r.map(escapeCsvCell).join(',')));
+          const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function parseCsvText(text) {
+          const rows = [];
+          let row = [];
+          let cur = '';
+          let inQuotes = false;
+          const clean = text.replace(/^\uFEFF/, '');
+          for (let i = 0; i < clean.length; i++) {
+            const ch = clean[i];
+            if (inQuotes) {
+              if (ch === '"' && clean[i + 1] === '"') {
+                cur += '"';
+                i++;
+              } else if (ch === '"') {
+                inQuotes = false;
+              } else {
+                cur += ch;
+              }
+            } else if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ',') {
+              row.push(cur.trim());
+              cur = '';
+            } else if (ch === '\r' || ch === '\n') {
+              if (ch === '\r' && clean[i + 1] === '\n') i++;
+              row.push(cur.trim());
+              if (row.some(c => c !== '')) rows.push(row);
+              row = [];
+              cur = '';
+            } else {
+              cur += ch;
+            }
+          }
+          if (cur !== '' || row.length > 0) {
+            row.push(cur.trim());
+            if (row.some(c => c !== '')) rows.push(row);
+          }
+          if (rows.length < 2) return [];
+          const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''));
+          return rows.slice(1).map(vals => {
+            const obj = {};
+            headers.forEach((h, idx) => { obj[h] = vals[idx] ?? ''; });
+            return obj;
+          });
+        }
+
+        async function generateReport() {
+          const engine = window.CvsuCirculationEngine;
+          if (!engine || !engine.API_BASE) {
+            showToast('Live reports require HTTP/MySQL server.', 'error');
+            return null;
+          }
+          const params = new URLSearchParams({
+            type: typeEl.value,
+            date: dateEl.value || todayIso,
+            month: monthEl.value || todayIso.slice(0, 7)
+          });
+          const res = await fetch(`${engine.API_BASE}reports/generate.php?${params.toString()}`);
+          const json = await res.json();
+          if (json.status !== 'success') {
+            showToast(json.message || 'Could not generate report.', 'error');
+            return null;
+          }
+          lastReport = json;
+          metaBanner.textContent = `${json.title} — ${json.subtitle} (${json.rows.length} record${json.rows.length === 1 ? '' : 's'})`;
+          thead.innerHTML = '<tr>' + json.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+          if (json.rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${json.columns.length}" style="text-align:center;color:#94a3b8;padding:18px;">No records found for this report filter.</td></tr>`;
+          } else {
+            tbody.innerHTML = json.rows.map(r => '<tr>' + r.map(cell => `<td>${cell}</td>`).join('') + '</tr>').join('');
+          }
+          return json;
+        }
+
+        document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+
+        document.getElementById('exportReportCsvBtn').addEventListener('click', async function() {
+          const rep = lastReport || await generateReport();
+          if (!rep) return;
+          downloadCsv(`${typeEl.value}_${todayIso}.csv`, rep.columns, rep.rows);
+          showToast('Report exported to Excel-compatible CSV.', 'success');
+        });
+
+        document.getElementById('printReportBtn').addEventListener('click', async function() {
+          const rep = lastReport || await generateReport();
+          if (!rep) return;
+          const win = window.open('', '_blank', 'width=960,height=700');
+          if (!win) {
+            showToast('Allow popups to print or save PDF.', 'error');
+            return;
+          }
+          const tableHtml = `
+            <table border="1" cellspacing="0" cellpadding="6" style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr style="background:#f1f5f9;">${rep.columns.map(c => `<th align="left">${c}</th>`).join('')}</tr></thead>
+              <tbody>${rep.rows.length ? rep.rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${rep.columns.length}" align="center">No records</td></tr>`}</tbody>
+            </table>
+          `;
+          win.document.write(`<!DOCTYPE html><html><head><title>${rep.title}</title></head><body style="font-family:Arial,sans-serif;padding:24px;">
+            <h2 style="margin:0 0 4px 0;color:#065f46;">Cavite State University - Imus Campus Library</h2>
+            <h3 style="margin:0 0 4px 0;">${rep.title}</h3>
+            <p style="margin:0 0 16px 0;color:#475569;font-size:13px;">${rep.subtitle}</p>
+            ${tableHtml}
+          </body></html>`);
+          win.document.close();
+          win.focus();
+          win.print();
+        });
+
+        document.getElementById('exportBooksCsvBtn').addEventListener('click', function() {
+          const books = getBooksList();
+          const cols = ['book_code', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'available_copies', 'room_use'];
+          const rows = books.map(b => [b.id, b.isbn, b.title, b.author, b.publisher, b.publicationYear, b.category, b.location, b.totalCopies, b.availableCopies, b.isRoomUseOnly ? 'YES' : 'NO']);
+          downloadCsv(`cvsu_books_export_${todayIso}.csv`, cols, rows);
+          showToast('Exported books catalog CSV.', 'success');
+        });
+
+        document.getElementById('downloadBookTplBtn').addEventListener('click', function() {
+          const cols = ['book_code', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'room_use'];
+          const sample = [['BK-SAMPLE-01', '978-0132350884', 'Clean Architecture', 'Robert C. Martin', 'Pearson', '2017', 'CS & IT', 'QA 76.76 .M37', '3', 'NO']];
+          downloadCsv('cvsu_books_import_template.csv', cols, sample);
+        });
+
+        document.getElementById('importBooksFile').addEventListener('change', async function() {
+          const file = this.files[0];
+          if (!file) return;
+          const text = await file.text();
+          const rows = parseCsvText(text);
+          if (rows.length === 0) {
+            showToast('CSV file is empty or invalid.', 'error');
+            this.value = '';
+            return;
+          }
+          const engine = window.CvsuCirculationEngine;
+          const res = await fetch(`${engine.API_BASE}books/import.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ books: rows })
+          });
+          const json = await res.json();
+          showToast(json.message || 'Import finished.', json.status === 'success' ? 'success' : 'error');
+          if (json.status === 'success') {
+            await engine.syncFromServer();
+            render();
+          }
+          this.value = '';
+        });
+
+        document.getElementById('exportStudentsCsvBtn').addEventListener('click', async function() {
+          await loadStudents();
+          const cols = ['student_number', 'full_name', 'email', 'mobile_number', 'course', 'year_level', 'campus', 'account_status'];
+          const rows = cachedStudents.map(s => [s.student_number, s.full_name, s.email, s.mobile_number, s.course, s.year_level, s.campus, s.account_status]);
+          downloadCsv(`cvsu_students_export_${todayIso}.csv`, cols, rows);
+          showToast('Exported students records CSV.', 'success');
+        });
+
+        document.getElementById('downloadStudentTplBtn').addEventListener('click', function() {
+          const cols = ['student_number', 'full_name', 'email', 'mobile_number', 'course', 'year_level', 'campus', 'account_status'];
+          const sample = [['202610099', 'Maria Clara Santos', 'maria.santos@cvsu.edu.ph', '09171239999', 'BS Information Technology', '1st Year', 'Imus Campus', 'active']];
+          downloadCsv('cvsu_students_import_template.csv', cols, sample);
+        });
+
+        document.getElementById('importStudentsFile').addEventListener('change', async function() {
+          const file = this.files[0];
+          if (!file) return;
+          const text = await file.text();
+          const rows = parseCsvText(text);
+          if (rows.length === 0) {
+            showToast('CSV file is empty or invalid.', 'error');
+            this.value = '';
+            return;
+          }
+          const engine = window.CvsuCirculationEngine;
+          const res = await fetch(`${engine.API_BASE}students/import.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ students: rows })
+          });
+          const json = await res.json();
+          showToast(json.message || 'Import finished.', json.status === 'success' ? 'success' : 'error');
+          if (json.status === 'success') {
+            await loadStudents();
+          }
+          this.value = '';
+        });
+      }
       render();
     })();
   </script>

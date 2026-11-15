@@ -391,9 +391,15 @@
               ? `<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">DUE TODAY</span>`
               : `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">ACTIVE</span>`);
 
+          const renewalCount = Number(loan.renewalCount || 0);
+          const renewBadge = renewalCount > 0
+            ? `<span style="background:#eff6ff;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-size:10.5px;font-weight:700;margin-left:4px;">Extended ×${renewalCount}</span>`
+            : '';
+          const canRenew = !calc.isOverdue && renewalCount < 2;
+
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td><code>${loan.ref}</code><br>${statusBadge}</td>
+            <td><code>${loan.ref}</code><br>${statusBadge}${renewBadge}</td>
             <td><strong>${loan.studentName}</strong><br><span style="font-size:11.5px;color:#64748b;">${loan.studentNo}</span></td>
             <td><strong>${loan.bookTitle}</strong><br><span style="font-size:11.5px;color:#64748b;">${loan.callNo} (${loan.loanType})</span></td>
             <td><strong>${loan.dueDate}</strong><br><span style="font-size:11px;color:#64748b;">Due ${loan.dueTime || '17:00'}</span></td>
@@ -403,15 +409,28 @@
             </td>
             <td><strong style="color:${calc.fineAmount > 0 ? '#dc2626' : '#16a34a'};font-size:14px;">₱${calc.fineAmount.toFixed(2)}</strong></td>
             <td>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <select class="return-condition-select" data-ref="${loan.ref}" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:11.5px;">
-                  <option value="good">Good</option>
-                  <option value="damaged">Damaged</option>
-                  <option value="lost">Lost</option>
-                </select>
-                <button type="button" class="btn-cam btn-process-return" data-ref="${loan.ref}" style="padding:4px 10px;font-size:11.5px;background:#00a65a;color:#fff;border-color:#008f4c;">
-                  Return
-                </button>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <select class="return-condition-select" data-ref="${loan.ref}" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:11.5px;">
+                    <option value="good">Good</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                  <button type="button" class="btn-cam btn-process-return" data-ref="${loan.ref}" style="padding:4px 10px;font-size:11.5px;background:#00a65a;color:#fff;border-color:#008f4c;">
+                    Return
+                  </button>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <select class="renew-duration-select" data-ref="${loan.ref}" ${canRenew ? '' : 'disabled'} style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:11.5px;">
+                    <option value="1_day">+1 Day</option>
+                    <option value="2_days">+2 Days</option>
+                    <option value="3_days">+3 Days</option>
+                    <option value="overnight">Overnight</option>
+                  </select>
+                  <button type="button" class="btn-cam btn-process-renew" data-ref="${loan.ref}" ${canRenew ? '' : 'disabled'} title="${canRenew ? 'Extend loan due date' : (calc.isOverdue ? 'Cannot renew overdue loan' : 'Max 2 renewals reached')}" style="padding:4px 10px;font-size:11.5px;background:${canRenew ? '#0284c7' : '#94a3b8'};color:#fff;border-color:${canRenew ? '#0369a1' : '#94a3b8'};">
+                    Renew
+                  </button>
+                </div>
               </div>
             </td>
           `;
@@ -441,6 +460,33 @@
               renderScanLogsTable();
               renderSmartCirculationDesk();
               showToast(res.message, fineAmt > 0 ? 'error' : 'success');
+            } else {
+              showToast(res.message, 'error');
+            }
+          });
+        });
+
+        activeTbody.querySelectorAll('.btn-process-renew').forEach(btn => {
+          btn.addEventListener('click', async function () {
+            const ref = this.getAttribute('data-ref');
+            const selectEl = activeTbody.querySelector(`.renew-duration-select[data-ref="${ref}"]`);
+            const extType = selectEl ? selectEl.value : '1_day';
+            const res = await engine.renewRemote(ref, extType, assessmentDate);
+            if (res.ok) {
+              const logs = getScanLogs();
+              logs.push({
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+                studentNo: res.loan.studentNo || res.loan.student_number,
+                name: res.loan.studentName || res.loan.student_name,
+                course: res.loan.course || 'CvSU Student',
+                book: res.loan.bookTitle || res.loan.book_title,
+                ref: res.loan.ref || res.loan.transaction_code,
+                status: `RENEWED (${res.loan.dueDate || res.loan.new_due_date})`
+              });
+              saveScanLogs(logs);
+              renderScanLogsTable();
+              renderSmartCirculationDesk();
+              showToast(res.message, 'success');
             } else {
               showToast(res.message, 'error');
             }

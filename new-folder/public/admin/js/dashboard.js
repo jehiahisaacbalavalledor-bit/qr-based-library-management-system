@@ -340,7 +340,7 @@
                 <div style="text-align: right;">
                   ${badge}
                   <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px;">
-                    Due: <strong>${loan.dueDate}</strong> (${loan.dueTime || '17:00'})
+                    Due: <strong>${loan.dueDate}</strong> (${loan.dueTime || '17:00'})${Number(loan.renewalCount || 0) > 0 ? ` • <span style="color:#0284c7;font-weight:600;">Extended ×${loan.renewalCount}</span>` : ''}
                   </div>
                 </div>
               </div>
