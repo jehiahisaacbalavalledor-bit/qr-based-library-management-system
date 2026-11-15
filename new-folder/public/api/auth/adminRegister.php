@@ -8,6 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -109,6 +110,12 @@ try {
     $newAdminId = $pdo->lastInsertId();
 
     // Set staff session
+    AuthGuard::setAdminSession([
+        'id'          => $newAdminId,
+        'employee_id' => $employeeId,
+        'full_name'   => $fullName,
+        'role'        => $role
+    ]);
     $_SESSION['admin_id'] = $newAdminId;
     $_SESSION['employee_id'] = $employeeId;
     $_SESSION['admin_name'] = $fullName;

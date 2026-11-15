@@ -279,14 +279,182 @@
     }
 
     /* Print Formatting */
+    #batchPrintSheet {
+      display: none;
+    }
+
+    .batch-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      background: var(--bg-main);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      font-size: 12.5px;
+    }
+
+    .batch-toolbar-left,
+    .batch-toolbar-right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .batch-count-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .batch-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      max-height: 62vh;
+      overflow-y: auto;
+      padding: 6px 2px;
+    }
+
+    .batch-preview-grid.cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .batch-preview-grid.cols-1 {
+      grid-template-columns: minmax(0, 280px);
+      justify-content: center;
+    }
+
+    .batch-sticker-item {
+      background: #ffffff;
+      border: 1.5px solid #00875a;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+      color: #0f172a;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .batch-sticker-head {
+      width: 100%;
+      border-bottom: 1.5px solid #00875a;
+      padding-bottom: 5px;
+      margin-bottom: 8px;
+    }
+
+    .batch-sticker-head h5 {
+      margin: 0;
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #00875a;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .batch-sticker-head small {
+      display: block;
+      font-size: 9px;
+      color: #64748b;
+    }
+
+    .batch-sticker-qr {
+      width: 118px;
+      height: 118px;
+      padding: 4px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .batch-sticker-qr img,
+    .batch-sticker-qr canvas {
+      width: 110px !important;
+      height: 110px !important;
+      display: block;
+    }
+
+    .batch-sticker-meta {
+      width: 100%;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 7px 8px;
+      text-align: left;
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .batch-sticker-meta .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .batch-sticker-meta .meta-call {
+      font-family: monospace;
+      font-weight: 800;
+      color: #00875a;
+      font-size: 11px;
+    }
+
+    .batch-sticker-meta .meta-title {
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px dashed #cbd5e1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .batch-sticker-meta .meta-footer {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      color: #64748b;
+    }
+
+    .batch-badge-copy {
+      font-family: monospace;
+      font-weight: 700;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
     @media print {
       body * {
         visibility: hidden;
       }
-      .sticker-card, .sticker-card * {
+      body:not(.printing-batch) .sticker-card,
+      body:not(.printing-batch) .sticker-card * {
         visibility: visible;
       }
-      .sticker-card {
+      body:not(.printing-batch) .sticker-card {
         position: absolute;
         left: 0;
         top: 0;
@@ -295,7 +463,26 @@
         box-shadow: none;
         border: 2px solid #000000;
       }
-      .sticker-actions, .app-sidebar, .app-topbar, .catalog-card {
+      body.printing-batch #batchPrintSheet,
+      body.printing-batch #batchPrintSheet * {
+        visibility: visible;
+      }
+      body.printing-batch #batchPrintSheet {
+        display: grid !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-height: none !important;
+        overflow: visible !important;
+        gap: 10px;
+        padding: 8px;
+      }
+      body.printing-batch .batch-sticker-item {
+        border: 1.5px solid #000000;
+        box-shadow: none;
+      }
+      .sticker-actions, .app-sidebar, .app-topbar, .catalog-card, #addBookModal, #batchPrintModal, .toast-container {
         display: none !important;
       }
     }
@@ -319,8 +506,8 @@
       
       <header class="app-topbar">
         <div class="topbar-left">
-          <a href="../../../user/pages/dashboard.html" class="topbar-pill-btn" style="text-decoration: none;">
-            &larr; Return to Dashboard
+          <a href="../../admin-dashboard.html" class="topbar-pill-btn" style="text-decoration: none;">
+            &larr; Return to Admin Console
           </a>
           <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
             📚 Official Book QR Code Generator & Label Printer
@@ -381,11 +568,37 @@
               </select>
             </div>
 
+            <!-- Batch Selection Toolbar -->
+            <div class="batch-toolbar">
+              <div class="batch-toolbar-left">
+                <span class="batch-count-pill" id="batchSelectionCount">0 selected</span>
+                <button type="button" class="btn-table-action" id="batchSelectAllVisibleBtn">Select All Visible</button>
+                <button type="button" class="btn-table-action" id="batchClearSelectionBtn" style="color: #64748b;">Clear</button>
+              </div>
+              <div class="batch-toolbar-right">
+                <select id="batchCopyMode" class="category-select" style="padding: 6px 10px; font-size: 12px;" title="Copies per selected book">
+                  <option value="single">1 Label per Book</option>
+                  <option value="copies">All Total Copies</option>
+                </select>
+                <select id="batchLayoutCols" class="category-select" style="padding: 6px 10px; font-size: 12px;" title="Print sheet layout">
+                  <option value="3">3 Cols (A4 Sheet)</option>
+                  <option value="2">2 Cols (Large Spine)</option>
+                  <option value="1">1 Col (Thermal 60mm)</option>
+                </select>
+                <button type="button" class="btn-table-action" id="openBatchPreviewBtn" style="background: #00875a; color: #ffffff; border-color: #00875a; padding: 7px 12px;">
+                  🖨️ Batch Print Sheet (0)
+                </button>
+              </div>
+            </div>
+
             <!-- Books Table -->
             <div style="overflow-x: auto;">
               <table class="book-table">
                 <thead>
                   <tr>
+                    <th style="width: 36px; text-align: center;">
+                      <input type="checkbox" id="selectAllBooksCheckbox" title="Select / deselect all visible books">
+                    </th>
                     <th>Book Code / ID</th>
                     <th>Title & Bibliographic Details</th>
                     <th>Call Number</th>
@@ -452,7 +665,11 @@
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                   <rect x="6" y="14" width="12" height="8"></rect>
                 </svg>
-                Print Official Book QR Sticker
+                Print Single QR Sticker
+              </button>
+
+              <button type="button" class="btn-print-sticker" id="printBatchStickersBtn" style="background: #0f766e;">
+                🖨️ Batch Print Selected Labels (<span id="sidebarBatchCount">0</span>)
               </button>
 
               <button type="button" class="btn-table-action" id="testScanInScannerBtn" style="justify-content: center; padding: 10px; background: var(--bg-card);">
@@ -539,10 +756,44 @@
     </div>
   </div>
 
+  <!-- Modal: Batch QR Label Sheet Preview -->
+  <div class="modal-overlay" id="batchPrintModal">
+    <div class="modal-dialog" style="max-width: 920px; width: 94%;">
+      <div class="modal-header">
+        <div class="modal-title" id="batchModalTitle">
+          🖨️ Batch QR Label Print Sheet Preview
+        </div>
+        <button class="modal-close-btn" id="closeBatchPrintModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-subtle);">
+          <div style="font-size: 12.5px; color: var(--text-secondary);" id="batchSummaryText">
+            0 labels ready to print.
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="batchModalLayoutCols" class="category-select" style="padding: 6px 10px; font-size: 12px;">
+              <option value="3">3 Columns (A4 Grid)</option>
+              <option value="2">2 Columns (Large Labels)</option>
+              <option value="1">1 Column (Thermal Roll)</option>
+            </select>
+            <button type="button" class="btn-print-sticker" id="confirmBatchPrintBtn" style="padding: 8px 16px; font-size: 13px;">
+              🖨️ Print All Labels Now
+            </button>
+          </div>
+        </div>
+        <div class="batch-preview-grid" id="batchModalPreviewGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Printable Batch Sheet Container (Populated on Batch Print) -->
+  <div id="batchPrintSheet" class="batch-preview-grid"></div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="../../../assets/vendor/qrcode/qrcode.min.js"></script>
+  <script src="../../../assets/js/route-guard.js"></script>
   <script src="../../../assets/js/circulation-engine.js"></script>
   <script src="../../js/books-qr.js"></script>
 </body>

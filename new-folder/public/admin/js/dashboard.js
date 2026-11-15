@@ -52,7 +52,11 @@
     return null;
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (window.CvsuRouteGuard) {
+      const sessionData = await window.CvsuRouteGuard.requireSession('student', '../../index.html', SESSION_USER_KEY);
+      if (!sessionData) return;
+    }
     // 1. Initialize Active User Data
     let currentUser = getActiveUser();
     if (!currentUser) {
@@ -645,8 +649,12 @@
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', function () {
-        sessionStorage.removeItem(SESSION_USER_KEY);
         showToast('Signed out successfully.', 'info');
+        if (window.CvsuRouteGuard) {
+          window.CvsuRouteGuard.logout('../../index.html', SESSION_USER_KEY);
+          return;
+        }
+        sessionStorage.removeItem(SESSION_USER_KEY);
         setTimeout(() => {
           window.location.href = '../../index.html';
         }, 500);

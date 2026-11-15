@@ -547,7 +547,11 @@
   }
 
   // DOM Loaded
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (window.CvsuRouteGuard) {
+      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../admin-index.html', 'cvsu_library_current_admin');
+      if (!sessionData) return;
+    }
     renderScanLogsTable();
 
     const simReturnDate = document.getElementById('simReturnDate');

@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -72,6 +73,11 @@ try {
     $insertStmt->execute([$studentNumber, $email, $mobile, $dob, $passwordHash, $fullName]);
 
     $newId = $pdo->lastInsertId();
+    AuthGuard::setStudentSession([
+        'id'             => $newId,
+        'student_number' => $studentNumber,
+        'full_name'      => $fullName
+    ]);
     $_SESSION['student_id'] = $newId;
     $_SESSION['student_number'] = $studentNumber;
     $_SESSION['full_name'] = $fullName;

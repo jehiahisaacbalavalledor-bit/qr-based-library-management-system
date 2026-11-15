@@ -948,6 +948,7 @@
     </div>
   </div>
 
+  <script src="../assets/js/route-guard.js"></script>
   <script src="../assets/js/circulation-engine.js"></script>
   <script>
     (function() {
@@ -1389,12 +1390,26 @@
 
       // Logout handler
       document.getElementById('adminLogoutBtn').addEventListener('click', function() {
-        sessionStorage.removeItem(SESSION_ADMIN_KEY);
         showToast('Admin session terminated.', 'info');
+        if (window.CvsuRouteGuard) {
+          window.CvsuRouteGuard.logout('admin-index.html', SESSION_ADMIN_KEY);
+          return;
+        }
+        sessionStorage.removeItem(SESSION_ADMIN_KEY);
         setTimeout(() => window.location.href = 'admin-index.html', 500);
       });
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', async function() {
+        if (window.CvsuRouteGuard) {
+          const sessionData = await window.CvsuRouteGuard.requireSession('admin', 'admin-index.html', SESSION_ADMIN_KEY);
+          if (!sessionData) return;
+          if (sessionData.role === 'Library Staff') {
+            const bSql = document.getElementById('backupSqlBtn');
+            const bJson = document.getElementById('backupJsonBtn');
+            if (bSql) bSql.style.display = 'none';
+            if (bJson) bJson.style.display = 'none';
+          }
+        }
         render();
         if (window.CvsuCirculationEngine) {
           window.CvsuCirculationEngine.syncFromServer().then(res => {

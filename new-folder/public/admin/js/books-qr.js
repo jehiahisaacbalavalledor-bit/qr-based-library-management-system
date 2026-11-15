@@ -153,6 +153,65 @@
     localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
   }
 
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function buildBookQrPayload(book) {
+    return {
+      type: 'CVSU_BOOK_QR',
+      bookCode: book.bookCode,
+      callNo: book.callNo,
+      acc: book.accessionNo,
+      title: (book.title || '').substring(0, 36),
+      roomOnly: book.isRoomUseOnly ? 1 : 0
+    };
+  }
+
+  function buildQrDataUrl(book, size = 110) {
+    if (typeof QRCode === 'undefined') return '';
+    const temp = document.createElement('div');
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    temp.style.top = '-9999px';
+    document.body.appendChild(temp);
+    try {
+      try {
+        new QRCode(temp, {
+          text: JSON.stringify(buildBookQrPayload(book)),
+          width: size,
+          height: size,
+          correctLevel: 1,
+          colorDark: '#00875a',
+          colorLight: '#ffffff'
+        });
+      } catch (err) {
+        temp.innerHTML = '';
+        new QRCode(temp, {
+          text: `CVSU:${book.bookCode}|${book.callNo}|${book.accessionNo}`,
+          width: size,
+          height: size,
+          correctLevel: 1,
+          colorDark: '#00875a',
+          colorLight: '#ffffff'
+        });
+      }
+      const canvas = temp.querySelector('canvas');
+      if (canvas && typeof canvas.toDataURL === 'function') {
+        return canvas.toDataURL('image/png');
+      }
+      const img = temp.querySelector('img');
+      return img ? img.src : '';
+    } finally {
+      temp.remove();
+    }
+  }
+
   function mapServerBookToLocal(row) {
     return {
       id: Number(row.id) || 0,
@@ -170,9 +229,15 @@
     };
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (window.CvsuRouteGuard) {
+      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../admin-index.html', 'cvsu_library_current_admin');
+      if (!sessionData) return;
+    }
     let books = getBooksCatalog();
     let currentSelectedBook = books[0];
+    let currentFilteredBooks = books.slice();
+    const selectedBatchCodes = new Set();
 
     // Theme support
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
@@ -228,14 +293,7 @@
       }
 
       // Generate Standardized Book QR Payload (Concise for fast scanning)
-      const bookQrPayload = {
-        type: 'CVSU_BOOK_QR',
-        bookCode: book.bookCode,
-        callNo: book.callNo,
-        acc: book.accessionNo,
-        title: (book.title || '').substring(0, 36),
-        roomOnly: book.isRoomUseOnly ? 1 : 0
-      };
+      const bookQrPayload = buildBookQrPayload(book);
 
       if (bookQrBox && typeof QRCode !== 'undefined') {
         try {
@@ -264,6 +322,59 @@
       }
     }
 
+    function getSelectedBooksOrdered() {
+      return books.filter(b => selectedBatchCodes.has(b.bookCode));
+    }
+
+    function expandSelectedLabels() {
+      const selectedBooks = getSelectedBooksOrdered();
+      const copyMode = document.getElementById('batchCopyMode')?.value || 'single';
+      const labels = [];
+      selectedBooks.forEach(book => {
+        const count = copyMode === 'copies' ? Math.max(1, parseInt(book.totalCopies, 10) || 1) : 1;
+        for (let i = 1; i <= count; i++) {
+          labels.push({
+            book,
+            copyIndex: i,
+            totalInBatch: count
+          });
+        }
+      });
+      return labels;
+    }
+
+    function updateBatchSelectionUI() {
+      const selectedBooks = getSelectedBooksOrdered();
+      const labels = expandSelectedLabels();
+      const countEl = document.getElementById('batchSelectionCount');
+      const openBtn = document.getElementById('openBatchPreviewBtn');
+      const sidebarCount = document.getElementById('sidebarBatchCount');
+      const selectAllCheckbox = document.getElementById('selectAllBooksCheckbox');
+
+      if (countEl) {
+        countEl.textContent = labels.length !== selectedBooks.length
+          ? `${selectedBooks.length} selected (${labels.length} labels)`
+          : `${selectedBooks.length} selected`;
+      }
+      if (openBtn) {
+        openBtn.textContent = `🖨️ Batch Print Sheet (${labels.length})`;
+      }
+      if (sidebarCount) {
+        sidebarCount.textContent = String(labels.length);
+      }
+
+      if (selectAllCheckbox) {
+        if (currentFilteredBooks.length === 0) {
+          selectAllCheckbox.checked = false;
+          selectAllCheckbox.indeterminate = false;
+        } else {
+          const selectedVisibleCount = currentFilteredBooks.filter(b => selectedBatchCodes.has(b.bookCode)).length;
+          selectAllCheckbox.checked = selectedVisibleCount === currentFilteredBooks.length;
+          selectAllCheckbox.indeterminate = selectedVisibleCount > 0 && selectedVisibleCount < currentFilteredBooks.length;
+        }
+      }
+    }
+
     // Render Table
     function renderTable(filterText = '', filterCat = 'all') {
       const tbody = document.getElementById('catalogTableBody');
@@ -283,8 +394,11 @@
         return matchesText && matchesCat;
       });
 
+      currentFilteredBooks = filtered;
+
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No matching books found in catalog.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">No matching books found in catalog.</td></tr>`;
+        updateBatchSelectionUI();
         return;
       }
 
@@ -293,33 +407,46 @@
         if (currentSelectedBook && currentSelectedBook.bookCode === book.bookCode) {
           tr.classList.add('selected');
         }
+        const isChecked = selectedBatchCodes.has(book.bookCode);
 
         tr.innerHTML = `
+          <td style="text-align: center;">
+            <input type="checkbox" class="book-batch-checkbox" data-code="${escapeHtml(book.bookCode)}" ${isChecked ? 'checked' : ''} aria-label="Select ${escapeHtml(book.title)} for batch print">
+          </td>
           <td>
-            <span class="book-badge-code">${book.bookCode}</span>
+            <span class="book-badge-code">${escapeHtml(book.bookCode)}</span>
           </td>
           <td>
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">
-              ${book.title}
+              ${escapeHtml(book.title)}
               ${book.isRoomUseOnly ? '<span class="book-badge-special">ROOM USE ONLY</span>' : ''}
             </div>
             <div style="font-size: 11.5px; color: var(--text-secondary);">
-              Author: ${book.author} | Year: ${book.publicationYear || 'N/A'}
+              Author: ${escapeHtml(book.author)} | Year: ${escapeHtml(book.publicationYear || 'N/A')}
             </div>
           </td>
-          <td><strong style="font-family: monospace; color: var(--cvsu-green-light);">${book.callNo}</strong></td>
-          <td><span style="font-family: monospace; color: var(--text-secondary);">${book.accessionNo}</span></td>
+          <td><strong style="font-family: monospace; color: var(--cvsu-green-light);">${escapeHtml(book.callNo)}</strong></td>
+          <td><span style="font-family: monospace; color: var(--text-secondary);">${escapeHtml(book.accessionNo)}</span></td>
           <td>
             <span style="font-size: 12px; font-weight: 600; color: ${book.availableCopies > 0 ? '#16a34a' : '#dc2626'};">
               ${book.availableCopies} / ${book.totalCopies} Available
             </span>
           </td>
           <td>
-            <button type="button" class="btn-table-action btn-select-book" data-code="${book.bookCode}">
+            <button type="button" class="btn-table-action btn-select-book" data-code="${escapeHtml(book.bookCode)}">
               Generate Sticker
             </button>
           </td>
         `;
+
+        tr.querySelector('.book-batch-checkbox').addEventListener('change', function () {
+          if (this.checked) {
+            selectedBatchCodes.add(book.bookCode);
+          } else {
+            selectedBatchCodes.delete(book.bookCode);
+          }
+          updateBatchSelectionUI();
+        });
 
         tr.querySelector('.btn-select-book').addEventListener('click', function () {
           document.querySelectorAll('.book-table tr').forEach(r => r.classList.remove('selected'));
@@ -330,6 +457,8 @@
 
         tbody.appendChild(tr);
       });
+
+      updateBatchSelectionUI();
     }
 
     // Initial table & sticker render
@@ -375,8 +504,189 @@
     const printSingleStickerBtn = document.getElementById('printSingleStickerBtn');
     if (printSingleStickerBtn) {
       printSingleStickerBtn.addEventListener('click', function () {
+        document.body.classList.remove('printing-batch');
         window.print();
       });
+    }
+
+    // Batch Selection & Print Sheet Handlers
+    function applyBatchGridColumns(container, cols) {
+      if (!container) return;
+      container.classList.remove('cols-1', 'cols-2');
+      if (cols === '1') container.classList.add('cols-1');
+      if (cols === '2') container.classList.add('cols-2');
+    }
+
+    function renderBatchStickersInto(container, labels, cols) {
+      if (!container) return;
+      applyBatchGridColumns(container, cols);
+      const qrCache = new Map();
+      container.innerHTML = labels.map(item => {
+        const b = item.book;
+        if (!qrCache.has(b.bookCode)) {
+          qrCache.set(b.bookCode, buildQrDataUrl(b, 110));
+        }
+        const qrSrc = qrCache.get(b.bookCode);
+        const copyTag = item.totalInBatch > 1
+          ? `<span class="batch-badge-copy">Copy ${item.copyIndex}/${item.totalInBatch}</span>`
+          : '';
+        const collectionBadge = b.isRoomUseOnly
+          ? '<span style="font-weight:700;color:#854d0e;background:#fef08a;padding:1px 4px;border-radius:3px;">ROOM ONLY</span>'
+          : '<span style="font-weight:700;color:#166534;background:#dcfce7;padding:1px 4px;border-radius:3px;">CIRCULATING</span>';
+
+        return `
+          <div class="batch-sticker-item">
+            <div class="batch-sticker-head">
+              <h5>Cavite State University</h5>
+              <small>Imus Campus Library • Book QR</small>
+            </div>
+            <div class="batch-sticker-qr">
+              ${qrSrc ? `<img src="${qrSrc}" alt="QR ${escapeHtml(b.bookCode)}">` : '<span style="font-size:10px;color:#dc2626;">QR unavailable</span>'}
+            </div>
+            <div class="batch-sticker-meta">
+              <div class="meta-row">
+                <span style="color:#64748b;">BOOK ID:</span>
+                <strong style="font-family:monospace;">${escapeHtml(b.bookCode)}</strong>
+              </div>
+              <div class="meta-row">
+                <span style="color:#64748b;">ACC #:</span>
+                <span style="font-family:monospace;font-weight:600;">${escapeHtml(b.accessionNo)}</span>
+              </div>
+              <div class="meta-row">
+                <span style="color:#64748b;">CALL NO:</span>
+                <span class="meta-call">${escapeHtml(b.callNo)}</span>
+              </div>
+              <div class="meta-title">${escapeHtml(b.title)}</div>
+              <div class="meta-footer">
+                <span>${escapeHtml(b.author)}</span>
+                <span style="display:flex;gap:4px;align-items:center;">${copyTag}${collectionBadge}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openBatchPrintPreview() {
+      const labels = expandSelectedLabels();
+      if (labels.length === 0) {
+        showToast('Select at least one book checkbox in the catalog table first.', 'error');
+        return;
+      }
+
+      const batchModal = document.getElementById('batchPrintModal');
+      const previewGrid = document.getElementById('batchModalPreviewGrid');
+      const summaryText = document.getElementById('batchSummaryText');
+      const toolbarCols = document.getElementById('batchLayoutCols')?.value || '3';
+      const modalColsSelect = document.getElementById('batchModalLayoutCols');
+      if (modalColsSelect) modalColsSelect.value = toolbarCols;
+
+      const uniqueBooks = new Set(labels.map(l => l.book.bookCode)).size;
+      if (summaryText) {
+        summaryText.textContent = `${labels.length} label${labels.length === 1 ? '' : 's'} across ${uniqueBooks} selected book${uniqueBooks === 1 ? '' : 's'} ready for printing.`;
+      }
+
+      renderBatchStickersInto(previewGrid, labels, toolbarCols);
+      if (batchModal) batchModal.classList.add('active');
+    }
+
+    function triggerBatchPrint() {
+      const labels = expandSelectedLabels();
+      if (labels.length === 0) {
+        showToast('Select at least one book checkbox in the catalog table first.', 'error');
+        return;
+      }
+
+      const cols = document.getElementById('batchModalLayoutCols')?.value
+        || document.getElementById('batchLayoutCols')?.value
+        || '3';
+      const printSheet = document.getElementById('batchPrintSheet');
+      renderBatchStickersInto(printSheet, labels, cols);
+
+      document.body.classList.add('printing-batch');
+      const cleanupPrintClass = () => {
+        document.body.classList.remove('printing-batch');
+      };
+      window.addEventListener('afterprint', cleanupPrintClass, { once: true });
+      window.print();
+      setTimeout(cleanupPrintClass, 1000);
+    }
+
+    const selectAllBooksCheckbox = document.getElementById('selectAllBooksCheckbox');
+    if (selectAllBooksCheckbox) {
+      selectAllBooksCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+          currentFilteredBooks.forEach(b => selectedBatchCodes.add(b.bookCode));
+        } else {
+          currentFilteredBooks.forEach(b => selectedBatchCodes.delete(b.bookCode));
+        }
+        renderTable(searchInput ? searchInput.value.trim() : '', categoryFilter ? categoryFilter.value : 'all');
+      });
+    }
+
+    const batchSelectAllVisibleBtn = document.getElementById('batchSelectAllVisibleBtn');
+    if (batchSelectAllVisibleBtn) {
+      batchSelectAllVisibleBtn.addEventListener('click', function () {
+        currentFilteredBooks.forEach(b => selectedBatchCodes.add(b.bookCode));
+        renderTable(searchInput ? searchInput.value.trim() : '', categoryFilter ? categoryFilter.value : 'all');
+        showToast(`Selected ${currentFilteredBooks.length} visible book(s) for batch printing.`, 'info');
+      });
+    }
+
+    const batchClearSelectionBtn = document.getElementById('batchClearSelectionBtn');
+    if (batchClearSelectionBtn) {
+      batchClearSelectionBtn.addEventListener('click', function () {
+        selectedBatchCodes.clear();
+        renderTable(searchInput ? searchInput.value.trim() : '', categoryFilter ? categoryFilter.value : 'all');
+        showToast('Cleared batch label selection.', 'info');
+      });
+    }
+
+    const batchCopyModeSelect = document.getElementById('batchCopyMode');
+    if (batchCopyModeSelect) {
+      batchCopyModeSelect.addEventListener('change', updateBatchSelectionUI);
+    }
+
+    const openBatchPreviewBtn = document.getElementById('openBatchPreviewBtn');
+    if (openBatchPreviewBtn) {
+      openBatchPreviewBtn.addEventListener('click', openBatchPrintPreview);
+    }
+
+    const printBatchStickersBtn = document.getElementById('printBatchStickersBtn');
+    if (printBatchStickersBtn) {
+      printBatchStickersBtn.addEventListener('click', openBatchPrintPreview);
+    }
+
+    const batchPrintModal = document.getElementById('batchPrintModal');
+    const closeBatchPrintModal = document.getElementById('closeBatchPrintModal');
+    if (closeBatchPrintModal && batchPrintModal) {
+      closeBatchPrintModal.addEventListener('click', function () {
+        batchPrintModal.classList.remove('active');
+      });
+    }
+    if (batchPrintModal) {
+      batchPrintModal.addEventListener('click', function (e) {
+        if (e.target === batchPrintModal) batchPrintModal.classList.remove('active');
+      });
+    }
+
+    const batchModalLayoutCols = document.getElementById('batchModalLayoutCols');
+    const batchLayoutCols = document.getElementById('batchLayoutCols');
+    if (batchModalLayoutCols) {
+      batchModalLayoutCols.addEventListener('change', function () {
+        if (batchLayoutCols) batchLayoutCols.value = this.value;
+        applyBatchGridColumns(document.getElementById('batchModalPreviewGrid'), this.value);
+      });
+    }
+    if (batchLayoutCols) {
+      batchLayoutCols.addEventListener('change', function () {
+        if (batchModalLayoutCols) batchModalLayoutCols.value = this.value;
+      });
+    }
+
+    const confirmBatchPrintBtn = document.getElementById('confirmBatchPrintBtn');
+    if (confirmBatchPrintBtn) {
+      confirmBatchPrintBtn.addEventListener('click', triggerBatchPrint);
     }
 
     // Test Scan in Circulation Scanner Button
