@@ -10,9 +10,23 @@ AuthGuard::enforceRoleIfAuthenticated(['Head Librarian', 'Library Admin', 'Admin
 
 $format = strtolower(trim($_GET['format'] ?? 'sql'));
 $timestamp = date('Y-m-d_His');
-$tables = ['users_admin', 'students', 'books', 'borrow_transactions', 'fines', 'library_holidays', 'circulation_audit_logs'];
+$candidateTables = [
+    'admins',
+    'library_staff',
+    'students',
+    'books',
+    'borrow_transactions',
+    'fines',
+    'library_holidays',
+    'activity_logs',
+    'circulation_audit_logs'
+];
 
 try {
+    $existingStmt = $pdo->query('SHOW TABLES');
+    $existingTables = $existingStmt->fetchAll(PDO::FETCH_COLUMN);
+    $tables = array_values(array_intersect($candidateTables, $existingTables));
+
     if ($format === 'json') {
         $dump = ['exported_at' => date('c'), 'database' => 'cvsu_library_db', 'tables' => []];
         foreach ($tables as $t) {

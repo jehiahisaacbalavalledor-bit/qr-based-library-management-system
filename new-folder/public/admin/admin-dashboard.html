@@ -678,6 +678,10 @@
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button type="button" class="btn-green" id="backupSqlBtn" style="padding: 6px 12px; font-size: 12px;">Download SQL Backup</button>
           <button type="button" class="btn-tbl-sm" id="backupJsonBtn" style="padding: 6px 12px; font-size: 12px;">Download JSON Backup</button>
+          <label class="btn-tbl-sm" id="restoreBackupBtn" style="padding: 6px 12px; font-size: 12px; cursor: pointer; margin: 0; color: #b45309; border-color: #fcd34d; background: #fffbeb;">
+            Restore JSON Backup
+            <input type="file" id="restoreBackupFile" accept=".json,application/json" style="display: none;">
+          </label>
         </div>
       </div>
       <div class="admin-card-body">
@@ -945,6 +949,28 @@
           <button type="submit" class="btn-green">Save Student</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm Database Restore -->
+  <div class="modal-overlay" id="restoreConfirmModal">
+    <div class="modal-dialog" style="max-width: 520px;">
+      <div class="modal-header">
+        <h4 style="margin: 0; font-size: 16px; color: #b45309;">Confirm Database Restore</h4>
+        <button class="modal-close-btn" id="closeRestoreModalBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin: 0 0 10px 0; font-size: 13px; color: #334155;">
+          Restoring this JSON backup will replace matching library database tables inside a rollback-safe transaction.
+        </p>
+        <div id="restorePreviewSummary" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font-size: 12px; color: #0f172a; line-height: 1.5;">
+          No backup file parsed yet.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-tbl-sm" id="cancelRestoreBtn">Cancel</button>
+        <button type="button" class="btn-green" id="confirmRestoreBtn" style="background: #d97706;">Confirm &amp; Restore Database</button>
+      </div>
     </div>
   </div>
 
@@ -1406,8 +1432,10 @@
           if (sessionData.role === 'Library Staff') {
             const bSql = document.getElementById('backupSqlBtn');
             const bJson = document.getElementById('backupJsonBtn');
+            const bRestore = document.getElementById('restoreBackupBtn');
             if (bSql) bSql.style.display = 'none';
             if (bJson) bJson.style.display = 'none';
+            if (bRestore) bRestore.style.display = 'none';
           }
         }
         render();
@@ -1542,6 +1570,105 @@
           window.location.href = `${engine.API_BASE}system/backup.php?format=json`;
           showToast('Downloading JSON database backup...', 'success');
         });
+
+        let pendingRestoreFile = null;
+        const restoreFileInput = document.getElementById('restoreBackupFile');
+        const restoreModal = document.getElementById('restoreConfirmModal');
+        const restoreSummaryEl = document.getElementById('restorePreviewSummary');
+        const confirmRestoreBtn = document.getElementById('confirmRestoreBtn');
+
+        function closeRestoreModal() {
+          if (restoreModal) restoreModal.classList.remove('active');
+          pendingRestoreFile = null;
+          if (restoreFileInput) restoreFileInput.value = '';
+        }
+
+        const closeRestoreModalBtn = document.getElementById('closeRestoreModalBtn');
+        const cancelRestoreBtn = document.getElementById('cancelRestoreBtn');
+        if (closeRestoreModalBtn) closeRestoreModalBtn.addEventListener('click', closeRestoreModal);
+        if (cancelRestoreBtn) cancelRestoreBtn.addEventListener('click', closeRestoreModal);
+        if (restoreModal) {
+          restoreModal.addEventListener('click', function(e) {
+            if (e.target === restoreModal) closeRestoreModal();
+          });
+        }
+
+        if (restoreFileInput) {
+          restoreFileInput.addEventListener('change', async function() {
+            const file = this.files && this.files[0];
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const parsed = JSON.parse(text);
+              if (!parsed || typeof parsed.tables !== 'object' || Array.isArray(parsed.tables)) {
+                showToast('Invalid JSON backup file: missing "tables" object.', 'error');
+                this.value = '';
+                return;
+              }
+              const tableNames = Object.keys(parsed.tables);
+              if (tableNames.length === 0) {
+                showToast('Backup file contains no tables to restore.', 'error');
+                this.value = '';
+                return;
+              }
+              const escRestore = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+              let totalRows = 0;
+              const breakdownHtml = tableNames.map(t => {
+                const count = Array.isArray(parsed.tables[t]) ? parsed.tables[t].length : 0;
+                totalRows += count;
+                return `<li><code>${escRestore(t)}</code>: <strong>${count}</strong> row(s)</li>`;
+              }).join('');
+              if (restoreSummaryEl) {
+                restoreSummaryEl.innerHTML = `
+                  <div><strong>File:</strong> ${escRestore(file.name)}</div>
+                  <div><strong>Exported At:</strong> ${escRestore(parsed.exported_at || 'Unknown')}</div>
+                  <div><strong>Total Rows:</strong> ${totalRows}</div>
+                  <ul style="margin: 8px 0 0 18px; padding: 0;">${breakdownHtml}</ul>
+                `;
+              }
+              pendingRestoreFile = file;
+              if (restoreModal) restoreModal.classList.add('active');
+            } catch (err) {
+              showToast('Could not parse JSON backup file.', 'error');
+              this.value = '';
+            }
+          });
+        }
+
+        if (confirmRestoreBtn) {
+          confirmRestoreBtn.addEventListener('click', async function() {
+            if (!pendingRestoreFile) return;
+            const origText = confirmRestoreBtn.textContent;
+            confirmRestoreBtn.disabled = true;
+            confirmRestoreBtn.textContent = 'Restoring...';
+            try {
+              const formData = new FormData();
+              formData.append('backup_file', pendingRestoreFile);
+              const res = await fetch(`${engine.API_BASE}system/restore.php`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: formData
+              });
+              const json = await res.json();
+              if (!res.ok || json.status !== 'success') {
+                showToast(json.message || 'Database restore failed.', 'error');
+                return;
+              }
+              showToast(json.message, 'success');
+              closeRestoreModal();
+              await engine.syncFromServer();
+              render();
+              await loadStudents();
+              await loadHolidays();
+              await loadAuditLogs();
+            } catch (err) {
+              showToast('Network error while restoring backup.', 'error');
+            } finally {
+              confirmRestoreBtn.disabled = false;
+              confirmRestoreBtn.textContent = origText;
+            }
+          });
+        }
 
         loadHolidays();
         loadAuditLogs();
