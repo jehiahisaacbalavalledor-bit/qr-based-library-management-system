@@ -170,7 +170,7 @@
       });
     }
 
-    // 5B. Sync Live Circulation Stats, Due Today Banner & 2-Book Quota
+    // 5B. Sync Student Personal Circulation Stats, Due Today Banner, Active Loans & Catalog
     function syncCirculationDashboard() {
       if (!window.CvsuCirculationEngine) return;
       const engine = window.CvsuCirculationEngine;
@@ -178,24 +178,35 @@
       const activeForStudent = engine.getActiveLoansForStudent(currentUser.studentNumber);
       const unpaidForStudent = engine.getUnpaidFinesForStudent(currentUser.studentNumber);
 
-      // Update Stat Cards
-      const statBorrowedEl = document.getElementById('statBorrowedBooks');
-      const statOverdueEl = document.getElementById('statOverdueBooks');
-      if (statBorrowedEl) statBorrowedEl.textContent = stats.activeBorrowedCount;
-      if (statOverdueEl) statOverdueEl.textContent = stats.overdueCount;
+      const unpaidSum = unpaidForStudent.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
+      const liveOverdueSum = activeForStudent.reduce((s, l) => s + engine.calculateOverdueFine(l.dueDate, stats.today).fineAmount, 0);
+      const totalStudentFine = unpaidSum + liveOverdueSum;
 
-      // Update Due Today Banner dynamically
+      const studentDueTodayCount = activeForStudent.filter(l => l.dueDate === stats.today).length;
+      const studentOverdueCount = activeForStudent.filter(l => l.dueDate < stats.today).length;
+
+      // Update Student Personal Stat Cards
+      const statBorrowedEl = document.getElementById('statBorrowedBooks');
+      const statDueTodayEl = document.getElementById('statDueTodayBooks');
+      const statOverdueEl = document.getElementById('statOverdueBooks');
+      if (statBorrowedEl) statBorrowedEl.textContent = `${activeForStudent.length} / ${engine.MAX_ACTIVE_BOOKS}`;
+      if (statDueTodayEl) statDueTodayEl.textContent = studentDueTodayCount;
+      if (statOverdueEl) statOverdueEl.textContent = `₱${totalStudentFine.toFixed(2)}`;
+
+      // Update Student Due Today Banner dynamically (for this student's books only)
       const dueBanner = document.getElementById('dueTodayBanner');
       if (dueBanner) {
         const headingEl = dueBanner.querySelector('h4 span:first-child');
         const descEl = dueBanner.querySelector('p');
-        if (stats.dueTodayCount > 0 || stats.overdueCount > 0) {
+        if (studentDueTodayCount > 0 || studentOverdueCount > 0) {
           dueBanner.style.display = '';
           if (headingEl) {
-            headingEl.textContent = `Due Today: ${stats.dueTodayCount} Book(s) | Overdue: ${stats.overdueCount} Book(s)`;
+            headingEl.textContent = `My Notice: ${studentDueTodayCount} Book(s) Due Today | ${studentOverdueCount} Overdue`;
           }
           if (descEl) {
-            descEl.innerHTML = `Projected overdue penalties: <strong>₱${stats.projectedOverdueTotal.toFixed(2)}</strong>. Return or renew before <strong>5:00 PM</strong> to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`;
+            descEl.innerHTML = totalStudentFine > 0
+              ? `You have <strong>₱${totalStudentFine.toFixed(2)}</strong> in accrued/unpaid fines. Please return overdue books at the <strong>Library Circulation Desk</strong> (₱20.00/day, Fri–Sun &amp; holidays exempted).`
+              : `Please return due books at the <strong>Library Circulation Desk</strong> before <strong>5:00 PM</strong> to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`;
           }
         } else {
           dueBanner.style.display = 'none';
@@ -211,9 +222,6 @@
         quotaLabel.textContent = `${activeForStudent.length} / ${engine.MAX_ACTIVE_BOOKS} Books`;
         quotaLabel.style.color = activeForStudent.length >= engine.MAX_ACTIVE_BOOKS ? '#dc2626' : '#0f172a';
       }
-
-      const unpaidSum = unpaidForStudent.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
-      const liveOverdueSum = activeForStudent.reduce((s, l) => s + engine.calculateOverdueFine(l.dueDate, stats.today).fineAmount, 0);
 
       if (fineLabel) {
         if (unpaidSum > 0) {
@@ -232,9 +240,95 @@
         quotaBanner.style.background = '#fef2f2';
         quotaBanner.style.borderColor = '#fecaca';
       }
+
+      // Render Student Active Loans List
+      const loansListEl = document.getElementById('studentActiveLoansList');
+      if (loansListEl) {
+        if (activeForStudent.length === 0) {
+          loansListEl.innerHTML = `<div style="padding: 16px; border: 1px dashed var(--border-subtle); border-radius: 10px; text-align: center; color: var(--text-secondary); font-size: 13px;">You have no active borrowed books. Present your Digital Student QR ID Pass at the Circulation Desk to borrow up to 2 books.</div>`;
+        } else {
+          loansListEl.innerHTML = activeForStudent.map(loan => {
+            const calc = engine.calculateOverdueFine(loan.dueDate, stats.today);
+            const isDueToday = loan.dueDate === stats.today;
+            const badge = calc.isOverdue
+              ? `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">OVERDUE (₱${calc.fineAmount.toFixed(2)})</span>`
+              : (isDueToday
+                ? `<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">DUE TODAY</span>`
+                : `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">ACTIVE</span>`);
+
+            return `
+              <div style="border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--bg-main);">
+                <div>
+                  <div style="font-size: 13.5px; font-weight: 700; color: var(--text-primary);">${loan.bookTitle}</div>
+                  <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                    Ref: <code>${loan.ref}</code> | Call #: <strong>${loan.callNo}</strong> | Borrowed: ${loan.borrowDate}
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  ${badge}
+                  <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 4px;">
+                    Due: <strong>${loan.dueDate}</strong> (${loan.dueTime || '17:00'})
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
     }
 
     syncCirculationDashboard();
+
+    // 5C. Read-Only Student Library Catalog Lookup
+    const STUDENT_CATALOG_BOOKS = [
+      { code: 'BK-CVSU-001', title: 'Clean Code: A Handbook of Agile Software Craftsmanship', author: 'Robert C. Martin', callNo: 'QA 76.6 .C67', available: 3, total: 4, roomOnly: false },
+      { code: 'BK-CVSU-002', title: 'Head First Java (3rd Edition)', author: 'Kathy Sierra & Bert Bates', callNo: 'QA 76.73 .J38', available: 3, total: 3, roomOnly: false },
+      { code: 'BK-CVSU-003', title: 'Database System Concepts (7th Edition)', author: 'Abraham Silberschatz, Henry F. Korth', callNo: 'QA 76.9 .D3 S54', available: 2, total: 3, roomOnly: false },
+      { code: 'BK-CVSU-004', title: 'Computer Networks (5th Edition)', author: 'Andrew S. Tanenbaum', callNo: 'QA 76.58 .T36', available: 2, total: 2, roomOnly: false },
+      { code: 'BK-CVSU-005', title: 'Web Design with HTML, CSS, JavaScript and jQuery', author: 'Jon Duckett', callNo: 'QA 76.76 .C672', available: 4, total: 5, roomOnly: false },
+      { code: 'BK-CVSU-006', title: 'CvSU Imus Undergraduate IT Theses Compendium Vol. IV', author: 'CvSU Dept. of Computer Studies', callNo: 'FIL QA 76.2 .C8', available: 1, total: 1, roomOnly: true }
+    ];
+
+    function renderStudentCatalog(query) {
+      const grid = document.getElementById('studentCatalogGrid');
+      if (!grid) return;
+      const q = (query || '').trim().toLowerCase();
+      const filtered = STUDENT_CATALOG_BOOKS.filter(b =>
+        !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.callNo.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 16px; color: var(--text-secondary); font-size: 13px;">No matching library books found.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(b => {
+        const badge = b.roomOnly
+          ? `<span style="background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">🔒 Room Use Only</span>`
+          : (b.available > 0
+            ? `<span style="background:#dcfce7;color:#166534;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">✓ ${b.available} of ${b.total} Available</span>`
+            : `<span style="background:#fee2e2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">Checked Out</span>`);
+
+        return `
+          <div class="borrow-book-option" style="cursor: default;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
+              <h4 style="margin:0;">${b.title}</h4>
+            </div>
+            <p style="margin:0 0 6px 0;">Author: ${b.author} | Call #: <strong>${b.callNo}</strong></p>
+            <div>${badge}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    renderStudentCatalog('');
+
+    const catalogSearchInput = document.getElementById('studentCatalogSearch');
+    if (catalogSearchInput) {
+      catalogSearchInput.addEventListener('input', function () {
+        renderStudentCatalog(this.value);
+      });
+    }
 
     // 6. Loan Type & Deadline Selection
     let selectedLoanDays = 3; // Default 3 days loan
