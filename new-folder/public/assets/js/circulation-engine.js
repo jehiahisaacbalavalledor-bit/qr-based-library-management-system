@@ -15,6 +15,12 @@
   const LOANS_STORAGE_KEY = 'cvsu_circulation_active_loans';
   const FINES_STORAGE_KEY = 'cvsu_circulation_fines_ledger';
   const HOLIDAYS_STORAGE_KEY = 'cvsu_library_holidays';
+  const CATALOG_STORAGE_KEY = 'cvsu_library_mysql_catalog';
+
+  const SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
+  const API_BASE = (SCRIPT_SRC && window.location.protocol.startsWith('http'))
+    ? new URL('../../api/', SCRIPT_SRC).href
+    : null;
 
   const MAX_ACTIVE_BOOKS = 2;
   const FINE_RATE_PER_DAY = 20; // ₱20.00 per chargeable day
@@ -404,13 +410,177 @@
     };
   }
 
+  function getCatalog() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(CATALOG_STORAGE_KEY));
+      if (Array.isArray(saved) && saved.length > 0) return saved;
+    } catch (e) {}
+    return [];
+  }
+
+  /**
+   * Live MySQL Sync: Fetches circulation status, active loans, fines, holidays & catalog
+   */
+  async function syncFromServer() {
+    if (!API_BASE) return { ok: false, offline: true };
+    try {
+      const [statusRes, booksRes] = await Promise.all([
+        fetch(`${API_BASE}circulation/status.php`),
+        fetch(`${API_BASE}books/list.php`)
+      ]);
+
+      const statusJson = await statusRes.json();
+      const booksJson = await booksRes.json();
+
+      if (statusJson.status === 'success' && statusJson.data) {
+        const d = statusJson.data;
+        if (Array.isArray(d.holidays) && d.holidays.length > 0) {
+          localStorage.setItem(HOLIDAYS_STORAGE_KEY, JSON.stringify(d.holidays.map(dt => ({ date: dt, name: 'Library Holiday' }))));
+        }
+        if (Array.isArray(d.active_loans)) {
+          const mappedLoans = d.active_loans.map(l => ({
+            ref: l.transaction_code,
+            studentNo: l.student_number,
+            studentName: l.full_name,
+            course: l.course || 'BS Information Technology',
+            bookCode: l.book_code,
+            bookTitle: l.title,
+            callNo: l.call_number,
+            loanType: l.loan_type,
+            borrowDate: l.borrow_date,
+            dueDate: l.due_date,
+            dueTime: l.loan_type === 'overnight' ? '10:00 AM' : '17:00',
+            status: l.return_status,
+            bookCondition: l.book_condition || 'good',
+            actualReturnDate: l.actual_return_date
+          }));
+          saveLoans(mappedLoans);
+        }
+        if (Array.isArray(d.fines)) {
+          const mappedFines = d.fines.map(f => ({
+            id: f.id,
+            ref: f.transaction_code,
+            studentNo: f.student_number,
+            studentName: f.full_name,
+            bookTitle: f.book_title,
+            overdueDays: Number(f.overdue_days || 0),
+            skippedDays: 0,
+            fineAmount: Number(f.fine_amount || 0),
+            bookCondition: f.book_condition || 'good',
+            replacementStatus: f.replacement_status || 'none',
+            paymentStatus: f.payment_status || 'unpaid',
+            createdAt: f.created_at
+          }));
+          saveFines(mappedFines);
+        }
+      }
+
+      if (booksJson.status === 'success' && Array.isArray(booksJson.data)) {
+        localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify(booksJson.data));
+      }
+
+      return {
+        ok: true,
+        stats: statusJson.data ? statusJson.data.stats : null,
+        catalog: booksJson.data || []
+      };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  }
+
+  async function borrowRemote(payload) {
+    if (!API_BASE) return checkoutBook(payload);
+    try {
+      const res = await fetch(`${API_BASE}circulation/borrow.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentNumber: payload.studentNo,
+          bookCode: payload.bookCode,
+          bookTitle: payload.bookTitle,
+          loanType: payload.loanType || '3_days',
+          transactionCode: payload.ref
+        })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        await syncFromServer();
+        return { ok: true, message: json.message, data: json.data };
+      }
+      return { ok: false, code: json.code, message: json.message };
+    } catch (err) {
+      return checkoutBook(payload);
+    }
+  }
+
+  async function returnRemote(transactionCode, returnDate, bookCondition) {
+    if (!API_BASE) return returnBook(transactionCode, returnDate, bookCondition);
+    try {
+      const res = await fetch(`${API_BASE}circulation/return.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionCode, returnDate, bookCondition })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        await syncFromServer();
+        return {
+          ok: true,
+          message: json.message,
+          loan: json.data,
+          fineCalculation: json.data.fine_calculation
+        };
+      }
+      return { ok: false, message: json.message };
+    } catch (err) {
+      return returnBook(transactionCode, returnDate, bookCondition);
+    }
+  }
+
+  async function settleFineRemote(fineId, action) {
+    if (!API_BASE) return settleFine(fineId, action);
+    try {
+      const res = await fetch(`${API_BASE}circulation/settle_fine.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fineId, action })
+      });
+      const json = await res.json();
+      if (json.status === 'success') {
+        await syncFromServer();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      return settleFine(fineId, action);
+    }
+  }
+
+  async function addBookRemote(bookData) {
+    if (!API_BASE) return { ok: false, offline: true };
+    const res = await fetch(`${API_BASE}books/create.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookData)
+    });
+    const json = await res.json();
+    if (json.status === 'success') {
+      await syncFromServer();
+      return { ok: true, message: json.message, data: json.data };
+    }
+    return { ok: false, message: json.message };
+  }
+
   global.CvsuCirculationEngine = {
     MAX_ACTIVE_BOOKS,
     FINE_RATE_PER_DAY,
+    API_BASE,
     toYmd,
     getHolidays,
     getLoans,
     getFines,
+    getCatalog,
     computeDueDate,
     calculateOverdueFine,
     getActiveLoansForStudent,
@@ -418,6 +588,11 @@
     checkoutBook,
     returnBook,
     settleFine,
-    getDashboardStats
+    getDashboardStats,
+    syncFromServer,
+    borrowRemote,
+    returnRemote,
+    settleFineRemote,
+    addBookRemote
   };
 })(window);

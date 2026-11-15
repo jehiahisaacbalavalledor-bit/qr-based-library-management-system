@@ -292,8 +292,27 @@
     function renderStudentCatalog(query) {
       const grid = document.getElementById('studentCatalogGrid');
       if (!grid) return;
+      const engine = window.CvsuCirculationEngine;
+      const liveCatalog = (engine && engine.getCatalog().length > 0)
+        ? engine.getCatalog().map(b => ({
+            code: b.book_code,
+            title: b.title,
+            author: b.author,
+            callNo: b.call_number,
+            available: Number(b.available_copies),
+            total: Number(b.total_copies),
+            roomOnly: Number(b.is_room_use_only) === 1
+          }))
+        : STUDENT_CATALOG_BOOKS;
+
+      const statAvailEl = document.getElementById('statAvailableBooks');
+      if (statAvailEl && engine && engine.getCatalog().length > 0) {
+        const totalAvail = liveCatalog.reduce((s, b) => s + b.available, 0);
+        statAvailEl.textContent = totalAvail;
+      }
+
       const q = (query || '').trim().toLowerCase();
-      const filtered = STUDENT_CATALOG_BOOKS.filter(b =>
+      const filtered = liveCatalog.filter(b =>
         !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.callNo.toLowerCase().includes(q)
       );
 
@@ -322,6 +341,16 @@
     }
 
     renderStudentCatalog('');
+
+    if (window.CvsuCirculationEngine) {
+      window.CvsuCirculationEngine.syncFromServer().then(res => {
+        if (res && res.ok) {
+          syncCirculationDashboard();
+          const searchVal = document.getElementById('studentCatalogSearch')?.value || '';
+          renderStudentCatalog(searchVal);
+        }
+      });
+    }
 
     const catalogSearchInput = document.getElementById('studentCatalogSearch');
     if (catalogSearchInput) {

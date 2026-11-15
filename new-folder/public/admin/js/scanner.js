@@ -419,26 +419,28 @@
         });
 
         activeTbody.querySelectorAll('.btn-process-return').forEach(btn => {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', async function () {
             const ref = this.getAttribute('data-ref');
             const selectEl = activeTbody.querySelector(`.return-condition-select[data-ref="${ref}"]`);
             const condition = selectEl ? selectEl.value : 'good';
-            const res = engine.returnBook(ref, assessmentDate, condition);
+            const res = await engine.returnRemote(ref, assessmentDate, condition);
             if (res.ok) {
+              const fineCalc = res.fineCalculation || {};
+              const fineAmt = Number(fineCalc.fineAmount ?? fineCalc.fine_amount ?? 0);
               const logs = getScanLogs();
               logs.push({
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
-                studentNo: res.loan.studentNo,
-                name: res.loan.studentName,
-                course: res.loan.course,
-                book: res.loan.bookTitle,
-                ref: res.loan.ref,
-                status: res.fineCalculation.fineAmount > 0 ? `RETURNED (₱${res.fineCalculation.fineAmount})` : 'RETURNED'
+                studentNo: res.loan.studentNo || res.loan.student_number,
+                name: res.loan.studentName || res.loan.student_name,
+                course: res.loan.course || 'CvSU Student',
+                book: res.loan.bookTitle || res.loan.book_title,
+                ref: res.loan.ref || res.loan.transaction_code,
+                status: fineAmt > 0 ? `RETURNED (₱${fineAmt})` : 'RETURNED'
               });
               saveScanLogs(logs);
               renderScanLogsTable();
               renderSmartCirculationDesk();
-              showToast(res.message, res.fineCalculation.fineAmount > 0 ? 'error' : 'success');
+              showToast(res.message, fineAmt > 0 ? 'error' : 'success');
             } else {
               showToast(res.message, 'error');
             }
@@ -485,10 +487,10 @@
         });
 
         finesTbody.querySelectorAll('.btn-settle-fine').forEach(btn => {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', async function () {
             const fineId = this.getAttribute('data-id');
             const action = this.getAttribute('data-action');
-            if (engine.settleFine(fineId, action)) {
+            if (await engine.settleFineRemote(fineId, action)) {
               renderSmartCirculationDesk();
               showToast(`Fine marked as ${action.toUpperCase()}.`, 'success');
             }
@@ -510,6 +512,11 @@
       });
     }
     renderSmartCirculationDesk();
+    if (window.CvsuCirculationEngine) {
+      window.CvsuCirculationEngine.syncFromServer().then(res => {
+        if (res && res.ok) renderSmartCirculationDesk();
+      });
+    }
 
     // Start / Stop Camera Buttons
     const startCamBtn = document.getElementById('startCamBtn');
@@ -656,12 +663,12 @@
     // Approve & Record Borrowing Transaction Button
     const approveBtn = document.getElementById('approveBorrowBtn');
     if (approveBtn) {
-      approveBtn.addEventListener('click', function () {
+      approveBtn.addEventListener('click', async function () {
         if (!currentDecodedData) return;
 
-        // Enforce 2-book limit, Room-Use-Only, and Unpaid Fines via Smart Circulation Engine
+        // Enforce 2-book limit, Room-Use-Only, and Unpaid Fines via Smart Circulation Engine (MySQL + Local)
         if (window.CvsuCirculationEngine) {
-          const checkoutRes = window.CvsuCirculationEngine.checkoutBook({
+          const checkoutRes = await window.CvsuCirculationEngine.borrowRemote({
             studentNo: currentDecodedData.studentNo,
             studentName: currentDecodedData.name,
             course: currentDecodedData.course,

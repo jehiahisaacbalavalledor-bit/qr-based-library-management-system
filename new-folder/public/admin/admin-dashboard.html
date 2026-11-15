@@ -489,7 +489,7 @@
           <div>
             <button class="btn-green" id="circIssueBtn">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Issue Book Loan (7 Days)
+              Issue Book Loan (3 Days)
             </button>
           </div>
         </div>
@@ -608,13 +608,12 @@
     </div>
   </div>
 
+  <script src="../assets/js/circulation-engine.js"></script>
   <script>
     (function() {
       'use strict';
       const SESSION_ADMIN_KEY = 'cvsu_library_current_admin';
       const STORAGE_BOOKS_KEY = 'cvsu_library_catalog_books';
-      const STORAGE_TRANSACTIONS_KEY = 'cvsu_library_transactions';
-      const STORAGE_ACTIVITY_KEY = 'cvsu_library_activity_logs';
 
       function showToast(msg, type = 'info') {
         const c = document.getElementById('toastContainer');
@@ -638,15 +637,23 @@
         }
       }
 
-      function getBooks() {
+      function getBooksList() {
+        const engine = window.CvsuCirculationEngine;
+        if (engine && engine.getCatalog().length > 0) {
+          return engine.getCatalog().map(b => ({
+            id: b.book_code,
+            isbn: b.isbn || 'N/A',
+            title: b.title,
+            author: b.author,
+            category: b.category,
+            location: b.call_number,
+            totalCopies: Number(b.total_copies),
+            availableCopies: Number(b.available_copies),
+            isRoomUseOnly: Number(b.is_room_use_only) === 1
+          }));
+        }
         try {
           return JSON.parse(localStorage.getItem(STORAGE_BOOKS_KEY)) || [];
-        } catch(e) { return []; }
-      }
-
-      function getTransactions() {
-        try {
-          return JSON.parse(localStorage.getItem(STORAGE_TRANSACTIONS_KEY)) || [];
         } catch(e) { return []; }
       }
 
@@ -656,85 +663,82 @@
         document.getElementById('adminStaffId').textContent = `ID: ${admin.employeeId}`;
         document.getElementById('navRoleBadge').textContent = `${admin.role} Console`;
 
-        const books = getBooks();
-        const txns = getTransactions();
-        const activeTxns = txns.filter(t => t.status === 'BORROWED');
+        const engine = window.CvsuCirculationEngine;
+        const books = getBooksList();
+        const activeLoans = engine ? engine.getLoans().filter(l => l.status === 'borrowed' || l.status === 'overdue') : [];
+        const todayStr = engine ? engine.toYmd(new Date()) : new Date().toISOString().split('T')[0];
 
         let overdueCount = 0;
         let totalFines = 0;
-        const today = new Date();
-        today.setHours(0,0,0,0);
 
-        activeTxns.forEach(t => {
-          const d = new Date(t.dueDate);
-          d.setHours(0,0,0,0);
-          const diff = Math.ceil((today - d) / (1000 * 60 * 60 * 24));
-          if (diff > 0) {
-            overdueCount++;
-            totalFines += diff * 10.0;
+        activeLoans.forEach(l => {
+          if (engine) {
+            const calc = engine.calculateOverdueFine(l.dueDate, todayStr);
+            if (calc.isOverdue) {
+              overdueCount++;
+              totalFines += calc.fineAmount;
+            }
           }
         });
 
+        if (engine) {
+          const unpaidLedger = engine.getFines().filter(f => f.paymentStatus === 'unpaid');
+          totalFines += unpaidLedger.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
+        }
+
         document.getElementById('adminTotalCatalog').textContent = books.length;
-        document.getElementById('adminActiveLoans').textContent = activeTxns.length;
+        document.getElementById('adminActiveLoans').textContent = activeLoans.length;
         document.getElementById('adminOverdueCount').textContent = overdueCount;
         document.getElementById('adminFinesCollected').textContent = `₱${totalFines.toFixed(2)}`;
 
         // Populate book select
         const sel = document.getElementById('circBookSelect');
-        sel.innerHTML = books.map(b => `<option value="${b.id}" ${b.availableCopies <= 0 ? 'disabled' : ''}>${b.id} — ${b.title} (${b.availableCopies} available)</option>`).join('');
+        sel.innerHTML = books.map(b => {
+          const roomTag = b.isRoomUseOnly ? ' [Room Use Only]' : '';
+          return `<option value="${b.id}" ${b.availableCopies <= 0 ? 'disabled' : ''}>${b.id} — ${b.title} (${b.availableCopies} available)${roomTag}</option>`;
+        }).join('');
 
         // Populate loans table
         const loansTbody = document.getElementById('adminLoansTbody');
-        if (activeTxns.length === 0) {
+        if (activeLoans.length === 0) {
           loansTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No books currently out on loan.</td></tr>`;
         } else {
-          loansTbody.innerHTML = activeTxns.map(t => {
-            const d = new Date(t.dueDate);
-            d.setHours(0,0,0,0);
-            const diff = Math.ceil((today - d) / (1000 * 60 * 60 * 24));
+          loansTbody.innerHTML = activeLoans.map(t => {
+            const calc = engine ? engine.calculateOverdueFine(t.dueDate, todayStr) : { isOverdue: false, overdueDays: 0, skippedDays: 0, fineAmount: 0 };
             let badge = '';
-            if (diff > 0) {
-              badge = `<span class="badge-status badge-overdue">OVERDUE (${diff}d) ₱${(diff * 10).toFixed(2)}</span>`;
+            if (calc.isOverdue) {
+              badge = `<span class="badge-status badge-overdue">OVERDUE (${calc.overdueDays}d chargeable, ${calc.skippedDays} skipped) ₱${calc.fineAmount.toFixed(2)}</span>`;
+            } else if (t.dueDate === todayStr) {
+              badge = `<span class="badge-status" style="background:#fef3c7;color:#d97706;">Due Today</span>`;
             } else {
-              badge = `<span class="badge-status badge-borrowed">Active (${Math.abs(diff)}d left)</span>`;
+              badge = `<span class="badge-status badge-borrowed">Active</span>`;
             }
 
             return `
               <tr>
-                <td><strong style="font-family: monospace;">${t.id}</strong></td>
-                <td><span style="font-family: monospace; font-weight: 700; color: #00875a;">${t.studentNumber}</span></td>
-                <td><strong>${t.bookTitle}</strong><div style="font-size: 11px; color: #64748b;">${t.bookId}</div></td>
+                <td><strong style="font-family: monospace;">${t.ref}</strong></td>
+                <td><span style="font-family: monospace; font-weight: 700; color: #00875a;">${t.studentNo}</span><div style="font-size: 11px; color: #64748b;">${t.studentName || ''}</div></td>
+                <td><strong>${t.bookTitle}</strong><div style="font-size: 11px; color: #64748b;">${t.bookCode || ''}</div></td>
                 <td>${t.borrowDate}</td>
                 <td><strong>${t.dueDate}</strong></td>
                 <td>${badge}</td>
                 <td>
-                  <button class="btn-tbl-sm return-btn" data-txnid="${t.id}" data-bookid="${t.bookId}">Check-In Return</button>
+                  <button class="btn-tbl-sm return-btn" data-ref="${t.ref}">Check-In Return</button>
                 </td>
               </tr>
             `;
           }).join('');
 
           loansTbody.querySelectorAll('.return-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-              const txId = this.getAttribute('data-txnid');
-              const bkId = this.getAttribute('data-bookid');
-              const allT = getTransactions();
-              const item = allT.find(x => x.id === txId);
-              if (item) {
-                item.status = 'RETURNED';
-                item.returnDate = new Date().toISOString().split('T')[0];
-                localStorage.setItem(STORAGE_TRANSACTIONS_KEY, JSON.stringify(allT));
-
-                const allB = getBooks();
-                const b = allB.find(x => x.id === bkId);
-                if (b) {
-                  b.availableCopies = Math.min(b.totalCopies, b.availableCopies + 1);
-                  localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(allB));
-                }
-
-                showToast(`Book returned and restocked into inventory!`, 'success');
+            btn.addEventListener('click', async function() {
+              const ref = this.getAttribute('data-ref');
+              if (!engine) return;
+              const res = await engine.returnRemote(ref, todayStr, 'good');
+              if (res.ok) {
+                showToast(res.message, 'success');
                 render();
+              } else {
+                showToast(res.message || 'Return failed.', 'error');
               }
             });
           });
@@ -748,49 +752,42 @@
             <td>${b.isbn}</td>
             <td><strong>${b.title}</strong><div style="font-size: 11.5px; color: #64748b;">${b.author}</div></td>
             <td><span class="badge-status badge-borrowed">${b.category}</span></td>
-            <td>${b.location}</td>
+            <td>${b.location} ${b.isRoomUseOnly ? '<span style="color:#b45309;font-size:11px;font-weight:700;">(Room Use)</span>' : ''}</td>
             <td><strong style="color: ${b.availableCopies > 0 ? '#16a34a' : '#dc2626'};">${b.availableCopies}</strong> / ${b.totalCopies}</td>
           </tr>
         `).join('');
       }
 
-      // Issue book handler
-      document.getElementById('circIssueBtn').addEventListener('click', function() {
+      // Issue book handler (Live MySQL + 2-Book Limit + Room-Use-Only)
+      document.getElementById('circIssueBtn').addEventListener('click', async function() {
         const studentNo = document.getElementById('circStudentNo').value.trim();
-        const bookId = document.getElementById('circBookSelect').value;
+        const bookCode = document.getElementById('circBookSelect').value;
         if (!studentNo) { showToast('Please enter a student number.', 'error'); return; }
-        if (!bookId) { showToast('Please select a book.', 'error'); return; }
+        if (!bookCode) { showToast('Please select a book.', 'error'); return; }
 
-        const books = getBooks();
-        const b = books.find(x => x.id === bookId);
-        if (!b || b.availableCopies <= 0) {
-          showToast('Selected book has no available copies.', 'error');
-          return;
-        }
+        const books = getBooksList();
+        const b = books.find(x => x.id === bookCode);
+        if (!b) return;
 
-        b.availableCopies -= 1;
-        localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
+        const engine = window.CvsuCirculationEngine;
+        if (!engine) return;
 
-        const txns = getTransactions();
-        const today = new Date();
-        const due = new Date();
-        due.setDate(today.getDate() + 7);
-
-        const newTxn = {
-          id: 'TXN-' + Math.floor(1000 + Math.random() * 9000),
-          studentNumber: studentNo,
-          bookId: b.id,
+        const res = await engine.borrowRemote({
+          studentNo,
+          studentName: `Student ${studentNo}`,
+          bookCode: b.id,
           bookTitle: b.title,
-          bookAuthor: b.author,
-          borrowDate: today.toISOString().split('T')[0],
-          dueDate: due.toISOString().split('T')[0],
-          status: 'BORROWED'
-        };
+          callNo: b.location,
+          loanType: '3_days',
+          isRoomUseOnly: b.isRoomUseOnly
+        });
 
-        txns.unshift(newTxn);
-        localStorage.setItem(STORAGE_TRANSACTIONS_KEY, JSON.stringify(txns));
-        showToast(`Loan registered for Student ${studentNo}!`, 'success');
-        render();
+        if (res.ok) {
+          showToast(res.message, 'success');
+          render();
+        } else {
+          showToast(res.message, 'error');
+        }
       });
 
       // Add book modal handlers
@@ -799,7 +796,7 @@
       document.getElementById('closeAddBookBtn').addEventListener('click', () => modal.classList.remove('active'));
       document.getElementById('cancelAddBookBtn').addEventListener('click', () => modal.classList.remove('active'));
 
-      document.getElementById('addBookForm').addEventListener('submit', function(e) {
+      document.getElementById('addBookForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const code = document.getElementById('newBookCode').value.trim();
         const title = document.getElementById('newBookTitle').value.trim();
@@ -807,7 +804,27 @@
         const cat = document.getElementById('newBookCategory').value;
         const copies = parseInt(document.getElementById('newBookCopies').value, 10) || 1;
 
-        const books = getBooks();
+        const engine = window.CvsuCirculationEngine;
+        if (engine && engine.API_BASE) {
+          const res = await engine.addBookRemote({
+            bookCode: code,
+            title: title,
+            author: author,
+            category: cat,
+            totalCopies: copies
+          });
+          if (res.ok) {
+            modal.classList.remove('active');
+            showToast(res.message, 'success');
+            render();
+            return;
+          } else {
+            showToast(res.message || 'Could not add book.', 'error');
+            return;
+          }
+        }
+
+        const books = getBooksList();
         books.push({
           id: code,
           isbn: '978-' + Math.floor(1000000000 + Math.random() * 9000000000),
@@ -832,7 +849,14 @@
         setTimeout(() => window.location.href = 'admin-index.html', 500);
       });
 
-      document.addEventListener('DOMContentLoaded', render);
+      document.addEventListener('DOMContentLoaded', function() {
+        render();
+        if (window.CvsuCirculationEngine) {
+          window.CvsuCirculationEngine.syncFromServer().then(res => {
+            if (res && res.ok) render();
+          });
+        }
+      });
       render();
     })();
   </script>
