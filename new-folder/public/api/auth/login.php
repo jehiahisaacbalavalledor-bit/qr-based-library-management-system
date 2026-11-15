@@ -36,7 +36,28 @@ try {
     $stmt->execute([$cleanStudentNo]);
     $student = $stmt->fetch();
 
-    if ($student && (password_verify($password, $student['password_hash']) || $password === 'Password123!')) {
+    $legacyPlaceholderHash = '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a';
+    $passwordValid = false;
+    if ($student) {
+        if (password_verify($password, $student['password_hash'])) {
+            $passwordValid = true;
+        } elseif ($student['password_hash'] === $legacyPlaceholderHash && $password === 'Password123!') {
+            // Migrate legacy placeholder seed hash to real bcrypt on first login
+            $newHash = password_hash($password, PASSWORD_BCRYPT);
+            $pdo->prepare("UPDATE students SET password_hash = ? WHERE id = ?")->execute([$newHash, $student['id']]);
+            $passwordValid = true;
+        }
+    }
+
+    if ($student && $passwordValid) {
+        if (isset($student['account_status']) && $student['account_status'] !== 'active') {
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Your student account is currently {$student['account_status']}. Please contact the Library Desk."
+            ]);
+            exit;
+        }
+
         AuthGuard::setStudentSession($student);
         $_SESSION['student_id'] = $student['id'];
         $_SESSION['student_number'] = $student['student_number'];

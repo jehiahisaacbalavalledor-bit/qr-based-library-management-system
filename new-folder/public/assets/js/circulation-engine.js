@@ -425,8 +425,8 @@
     if (!API_BASE) return { ok: false, offline: true };
     try {
       const [statusRes, booksRes] = await Promise.all([
-        fetch(`${API_BASE}circulation/status.php`),
-        fetch(`${API_BASE}books/list.php`)
+        fetch(`${API_BASE}circulation/status.php`, { credentials: 'same-origin' }),
+        fetch(`${API_BASE}books/list.php`, { credentials: 'same-origin' })
       ]);
 
       const statusJson = await statusRes.json();
@@ -495,6 +495,7 @@
     try {
       const res = await fetch(`${API_BASE}circulation/borrow.php`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentNumber: payload.studentNo,
@@ -554,6 +555,7 @@
     try {
       const res = await fetch(`${API_BASE}circulation/renew.php`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionCode, extensionType, today })
       });
@@ -577,6 +579,7 @@
     try {
       const res = await fetch(`${API_BASE}circulation/return.php`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionCode, returnDate, bookCondition })
       });
@@ -601,6 +604,7 @@
     try {
       const res = await fetch(`${API_BASE}circulation/settle_fine.php`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fineId, action })
       });
@@ -619,6 +623,7 @@
     if (!API_BASE) return { ok: false, offline: true };
     const res = await fetch(`${API_BASE}books/create.php`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bookData)
     });
@@ -634,6 +639,7 @@
     if (!API_BASE) return { ok: false, offline: true };
     const res = await fetch(`${API_BASE}books/update.php`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bookData)
     });
@@ -650,6 +656,7 @@
     const payload = typeof identifier === 'number' ? { id: identifier } : { bookCode: identifier };
     const res = await fetch(`${API_BASE}books/delete.php`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
@@ -664,7 +671,7 @@
   async function listStudentsRemote() {
     if (!API_BASE) return { ok: false, offline: true, data: [] };
     try {
-      const res = await fetch(`${API_BASE}students/list.php`);
+      const res = await fetch(`${API_BASE}students/list.php`, { credentials: 'same-origin' });
       const json = await res.json();
       if (json.status === 'success' && Array.isArray(json.data)) {
         return { ok: true, data: json.data };
@@ -679,6 +686,7 @@
     if (!API_BASE) return { ok: false, offline: true };
     const res = await fetch(`${API_BASE}students/update.php`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(studentData)
     });
@@ -694,6 +702,7 @@
     const payload = typeof identifier === 'number' ? { id: identifier } : { studentNumber: identifier };
     const res = await fetch(`${API_BASE}students/delete.php`, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });

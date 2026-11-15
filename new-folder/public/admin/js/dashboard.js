@@ -792,6 +792,58 @@
       });
     }
 
+    // 10b. Account Change Password Form
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+      changePasswordForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const engine = window.CvsuCirculationEngine;
+        if (!engine || !engine.API_BASE) {
+          showToast('Changing password requires an active server connection.', 'error');
+          return;
+        }
+        const currentPassword = document.getElementById('curPasswordInput')?.value || '';
+        const newPassword = document.getElementById('newPasswordInput')?.value || '';
+        const confirmPassword = document.getElementById('confirmPasswordInput')?.value || '';
+        if (newPassword.length < 8) {
+          showToast('New password must be at least 8 characters.', 'error');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          showToast('New password and confirmation do not match.', 'error');
+          return;
+        }
+        const btn = document.getElementById('changePasswordBtn');
+        const origText = btn ? btn.textContent : '';
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Updating...';
+        }
+        try {
+          const res = await fetch(`${engine.API_BASE}auth/changePassword.php`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+          });
+          const json = await res.json();
+          if (!res.ok || json.status !== 'success') {
+            showToast(json.message || 'Could not update password.', 'error');
+            return;
+          }
+          changePasswordForm.reset();
+          showToast(json.message || 'Password updated successfully.', 'success');
+        } catch (err) {
+          showToast('Network error while updating password.', 'error');
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = origText;
+          }
+        }
+      });
+    }
+
     // 11. Sign Out Action
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {

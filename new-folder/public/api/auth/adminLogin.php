@@ -48,10 +48,17 @@ try {
     $stmt->execute([$cleanEmpId, $cleanEmail]);
     $admin = $stmt->fetch();
 
-    // Verify password via bcrypt hash or demo emergency password
+    $legacyPlaceholderHash = '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a';
     $passwordValid = false;
     if ($admin) {
-        $passwordValid = password_verify($password, $admin['password_hash']) || ($password === 'AdminPassword123!');
+        if (password_verify($password, $admin['password_hash'])) {
+            $passwordValid = true;
+        } elseif ($admin['password_hash'] === $legacyPlaceholderHash && $password === 'AdminPassword123!') {
+            // Migrate legacy placeholder seed hash to real bcrypt on first login
+            $newHash = password_hash($password, PASSWORD_BCRYPT);
+            $pdo->prepare("UPDATE admins SET password_hash = ? WHERE id = ?")->execute([$newHash, $admin['id']]);
+            $passwordValid = true;
+        }
     }
 
     if ($admin && $passwordValid) {

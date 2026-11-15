@@ -803,5 +803,16 @@
       });
     }
 
+    const booksQrLogoutBtn = document.getElementById('booksQrLogoutBtn');
+    if (booksQrLogoutBtn) {
+      booksQrLogoutBtn.addEventListener('click', function () {
+        if (window.CvsuRouteGuard) {
+          window.CvsuRouteGuard.logout('../../admin-index.html', 'cvsu_library_current_admin');
+        } else {
+          window.location.href = '../../admin-index.html';
+        }
+      });
+    }
+
   });
 })();

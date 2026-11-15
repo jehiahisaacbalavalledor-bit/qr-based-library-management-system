@@ -458,6 +458,14 @@
               });
               saveScanLogs(logs);
               renderScanLogsTable();
+              showLastTransactionReceipt({
+                type: 'RETURN RECEIPT',
+                ref: res.loan.ref || res.loan.transaction_code || ref,
+                student: `${res.loan.studentName || res.loan.student_name || 'Borrower'} (${res.loan.studentNo || res.loan.student_number || 'N/A'})`,
+                book: res.loan.bookTitle || res.loan.book_title || ref,
+                extra: `Condition: ${condition.toUpperCase()} | Returned: ${assessmentDate} | Fine: ₱${fineAmt.toFixed(2)}`,
+                timestamp: new Date().toLocaleString()
+              });
               renderSmartCirculationDesk();
               showToast(res.message, fineAmt > 0 ? 'error' : 'success');
             } else {
@@ -485,6 +493,14 @@
               });
               saveScanLogs(logs);
               renderScanLogsTable();
+              showLastTransactionReceipt({
+                type: 'RENEWAL RECEIPT',
+                ref: res.loan.ref || res.loan.transaction_code || ref,
+                student: `${res.loan.studentName || res.loan.student_name || 'Borrower'} (${res.loan.studentNo || res.loan.student_number || 'N/A'})`,
+                book: res.loan.bookTitle || res.loan.book_title || ref,
+                extra: `New Due Date: ${res.loan.dueDate || res.loan.new_due_date || 'Updated'}`,
+                timestamp: new Date().toLocaleString()
+              });
               renderSmartCirculationDesk();
               showToast(res.message, 'success');
             } else {
@@ -546,11 +562,57 @@
     }
   }
 
+  let lastReceiptData = null;
+  function escReceiptHtml(v) {
+    return String(v ?? '').replace(/[&<>"']/g, m => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[m]);
+  }
+
+  function showLastTransactionReceipt(receipt) {
+    lastReceiptData = receipt;
+    const box = document.getElementById('lastTxnReceiptBox');
+    if (!box || !receipt) return;
+    const badgeEl = document.getElementById('receiptTypeBadge');
+    const refEl = document.getElementById('receiptRef');
+    const stuEl = document.getElementById('receiptStudent');
+    const bookEl = document.getElementById('receiptBook');
+    const extraEl = document.getElementById('receiptExtra');
+    const tsEl = document.getElementById('receiptTimestamp');
+
+    if (badgeEl) {
+      badgeEl.textContent = receipt.type || 'RECEIPT';
+      const isReturn = String(receipt.type || '').includes('RETURN');
+      badgeEl.style.background = isReturn ? '#e0f2fe' : '#dcfce7';
+      badgeEl.style.color = isReturn ? '#0369a1' : '#166534';
+    }
+    if (refEl) refEl.textContent = receipt.ref || '-';
+    if (stuEl) stuEl.textContent = receipt.student || '-';
+    if (bookEl) bookEl.textContent = receipt.book || '-';
+    if (extraEl) extraEl.textContent = receipt.extra || '-';
+    if (tsEl) tsEl.textContent = receipt.timestamp || new Date().toLocaleString();
+    box.style.display = 'block';
+  }
+
   // DOM Loaded
   document.addEventListener('DOMContentLoaded', async function () {
     if (window.CvsuRouteGuard) {
       const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../admin-index.html', 'cvsu_library_current_admin');
       if (!sessionData) return;
+    }
+    const scannerLogoutBtn = document.getElementById('scannerLogoutBtn');
+    if (scannerLogoutBtn) {
+      scannerLogoutBtn.addEventListener('click', function () {
+        if (window.CvsuRouteGuard) {
+          window.CvsuRouteGuard.logout('../../admin-index.html', 'cvsu_library_current_admin');
+        } else {
+          window.location.href = '../../admin-index.html';
+        }
+      });
     }
     renderScanLogsTable();
 
@@ -617,7 +679,8 @@
         if (savedPassStr) {
           sampleData = savedPassStr;
         } else {
-          // Default pre-seeded test borrow slip
+          // Default pre-seeded test borrow slip with unique transaction ref per click
+          const uniqueRef = `BRW-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
           sampleData = JSON.stringify({
             type: 'CVSU_BORROW',
             studentNo: '202410001',
@@ -625,9 +688,10 @@
             course: 'BS in Information Technology',
             email: 'juan.delacruz@cvsu.edu.ph',
             mobile: '09171234567',
+            bookCode: 'BK-CVSU-001',
             book: 'Clean Code: A Handbook of Agile Software Craftsmanship',
             callNo: 'QA 76.6 .C67',
-            ref: 'BRW-2026-8492',
+            ref: uniqueRef,
             borrowDate: new Date().toISOString().split('T')[0],
             dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
           });
@@ -641,16 +705,18 @@
     const quickScanGeneralIdBtn = document.getElementById('quickScanGeneralIdBtn');
     if (quickScanGeneralIdBtn) {
       quickScanGeneralIdBtn.addEventListener('click', function () {
+        const mariaRef = `BRW-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
         const mariaData = JSON.stringify({
           type: 'CVSU_BORROW',
-          studentNo: '202410452',
+          studentNo: '202410002',
           name: 'Maria Elena R. Santos',
           course: 'BS Computer Science',
           email: 'maria.santos@cvsu.edu.ph',
           mobile: '09189876543',
+          bookCode: 'BK-CVSU-003',
           book: 'Database System Concepts (7th Edition)',
           callNo: 'QA 76.9 .D3 S54',
-          ref: 'BRW-2026-7120',
+          ref: mariaRef,
           borrowDate: new Date().toISOString().split('T')[0],
           dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
         });
@@ -775,6 +841,14 @@
         saveScanLogs(logs);
 
         renderScanLogsTable();
+        showLastTransactionReceipt({
+          type: 'BORROW RECEIPT',
+          ref: currentDecodedData.ref || 'BRW-TXN',
+          student: `${currentDecodedData.name} (${currentDecodedData.studentNo})`,
+          book: currentDecodedData.book,
+          extra: `Call No: ${currentDecodedData.callNo || 'N/A'} | Due: ${currentDecodedData.dueDate || 'Per policy'}`,
+          timestamp: now.toLocaleString()
+        });
         showToast(`✅ Book Loan Approved for ${currentDecodedData.name}! Transaction logged.`, 'success');
 
         // Reset view for next scan
@@ -798,6 +872,40 @@
         if (emptyState) emptyState.style.display = 'block';
         currentDecodedData = null;
         showToast('Ready for next QR scan.', 'info');
+      });
+    }
+
+    const printLastReceiptBtn = document.getElementById('printLastReceiptBtn');
+    if (printLastReceiptBtn) {
+      printLastReceiptBtn.addEventListener('click', function () {
+        if (!lastReceiptData) {
+          showToast('Process a borrow, renew, or return transaction first to print a receipt.', 'info');
+          return;
+        }
+        const win = window.open('', '_blank', 'width=420,height=520');
+        if (!win) {
+          window.print();
+          return;
+        }
+        win.document.write(`<!DOCTYPE html><html><head><title>Library Receipt - ${escReceiptHtml(lastReceiptData.ref)}</title></head><body style="font-family:monospace,Arial,sans-serif;padding:20px;max-width:340px;margin:0 auto;color:#0f172a;">
+          <div style="text-align:center;border-bottom:2px dashed #94a3b8;padding-bottom:10px;margin-bottom:12px;">
+            <h3 style="margin:0;color:#00875a;">CvSU Imus Campus Library</h3>
+            <div style="font-size:12px;font-weight:700;margin-top:4px;">${escReceiptHtml(lastReceiptData.type)}</div>
+          </div>
+          <div style="font-size:12px;line-height:1.7;">
+            <div><strong>Ref #:</strong> ${escReceiptHtml(lastReceiptData.ref)}</div>
+            <div><strong>Borrower:</strong> ${escReceiptHtml(lastReceiptData.student)}</div>
+            <div><strong>Book:</strong> ${escReceiptHtml(lastReceiptData.book)}</div>
+            <div><strong>Summary:</strong> ${escReceiptHtml(lastReceiptData.extra)}</div>
+            <div><strong>Timestamp:</strong> ${escReceiptHtml(lastReceiptData.timestamp)}</div>
+          </div>
+          <div style="text-align:center;border-top:2px dashed #94a3b8;padding-top:10px;margin-top:14px;font-size:11px;color:#475569;">
+            Official QR Circulation Transaction Slip<br>Please retain for clearance verification.
+          </div>
+        </body></html>`);
+        win.document.close();
+        win.focus();
+        win.print();
       });
     }
 

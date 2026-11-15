@@ -98,6 +98,25 @@ try {
         $tableColumns[$table] = array_map(static fn($r) => $r['Field'], $colStmt->fetchAll());
     }
 
+    // Snapshot existing password_hash values before clearing tables so backups missing hashes never lock accounts out
+    $preservedHashes = ['admins' => [], 'students' => []];
+    if (in_array('admins', $tablesToRestore, true)) {
+        foreach ($pdo->query("SELECT id, employee_id, password_hash FROM `admins`")->fetchAll() as $aRow) {
+            if (!empty($aRow['password_hash'])) {
+                $preservedHashes['admins']['id:' . $aRow['id']] = $aRow['password_hash'];
+                $preservedHashes['admins']['emp:' . $aRow['employee_id']] = $aRow['password_hash'];
+            }
+        }
+    }
+    if (in_array('students', $tablesToRestore, true)) {
+        foreach ($pdo->query("SELECT id, student_number, password_hash FROM `students`")->fetchAll() as $sRow) {
+            if (!empty($sRow['password_hash'])) {
+                $preservedHashes['students']['id:' . $sRow['id']] = $sRow['password_hash'];
+                $preservedHashes['students']['sno:' . $sRow['student_number']] = $sRow['password_hash'];
+            }
+        }
+    }
+
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
     $pdo->beginTransaction();
 
@@ -115,6 +134,17 @@ try {
         foreach ($rows as $row) {
             if (!is_array($row)) {
                 continue;
+            }
+            if (($table === 'admins' || $table === 'students') && in_array('password_hash', $validCols, true)) {
+                $curHash = trim((string) ($row['password_hash'] ?? ''));
+                if ($curHash === '' || $curHash === '***REDACTED***') {
+                    $fallbackKey = $table === 'admins'
+                        ? ('emp:' . ($row['employee_id'] ?? ''))
+                        : ('sno:' . ($row['student_number'] ?? ''));
+                    $row['password_hash'] = $preservedHashes[$table]['id:' . ($row['id'] ?? '')]
+                        ?? $preservedHashes[$table][$fallbackKey]
+                        ?? password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
+                }
             }
             $insertCols = array_values(array_intersect(array_keys($row), $validCols));
             if (count($insertCols) === 0) {

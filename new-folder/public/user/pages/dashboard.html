@@ -405,6 +405,28 @@
                   <div class="info-item-val" style="color: #00a65a;">Max 2 Books / Titles</div>
                 </div>
               </div>
+
+              <!-- In-App Account Password Update -->
+              <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);" id="studentPasswordBox">
+                <h3 style="margin: 0 0 10px 0; font-size: 14.5px; color: var(--text-primary);">Account Security &amp; Change Password</h3>
+                <form id="changePasswordForm" style="display: grid; gap: 10px;">
+                  <div>
+                    <label for="curPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Current Password</label>
+                    <input type="password" id="curPasswordInput" class="borrow-input" required placeholder="Enter current password">
+                  </div>
+                  <div>
+                    <label for="newPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">New Password (min 8 chars)</label>
+                    <input type="password" id="newPasswordInput" class="borrow-input" required minlength="8" placeholder="Minimum 8 characters">
+                  </div>
+                  <div>
+                    <label for="confirmPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Confirm New Password</label>
+                    <input type="password" id="confirmPasswordInput" class="borrow-input" required minlength="8" placeholder="Re-enter new password">
+                  </div>
+                  <button type="submit" class="btn-borrow-generate" id="changePasswordBtn" style="margin-top: 4px;">
+                    Update Password
+                  </button>
+                </form>
+              </div>
             </section>
 
           </div>

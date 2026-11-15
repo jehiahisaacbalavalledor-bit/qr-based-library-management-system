@@ -10,6 +10,7 @@
   // Resolve public/ base URL from script location (assets/js/auth.js -> ../../)
   const SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
   const PUBLIC_BASE = SCRIPT_SRC ? new URL('../../', SCRIPT_SRC).href : '';
+  const IS_HTTP = window.location.protocol.startsWith('http');
 
   // Storage Keys
   const STORAGE_USERS_KEY = 'cvsu_library_registered_users';
@@ -606,6 +607,7 @@
           if (IS_HTTP) {
             const res = await fetch(`${PUBLIC_BASE}api/auth/resetPassword.php`, {
               method: 'POST',
+              credentials: 'same-origin',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userType: 'admin', employeeId: empId, email, newPassword })
             });
@@ -777,6 +779,7 @@
           if (IS_HTTP) {
             const res = await fetch(`${PUBLIC_BASE}api/auth/resetPassword.php`, {
               method: 'POST',
+              credentials: 'same-origin',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userType: 'student', studentNumber: studentNo, email, newPassword })
             });

@@ -195,22 +195,22 @@ CREATE TABLE IF NOT EXISTS `book_reservations` (
 -- 1. Seed Admins
 INSERT INTO `admins` (`employee_id`, `full_name`, `email`, `role`, `password_hash`)
 VALUES 
-('LIB-2024-001', 'Prof. Maria C. Santos', 'admin@cvsu.edu.ph', 'Head Librarian', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a')
+('LIB-2024-001', 'Prof. Maria C. Santos', 'admin@cvsu.edu.ph', 'Head Librarian', '$2y$12$eW2KWovIZjPhqEzYMz2z5ODM27inTndOYQkA8WisPtjRaT0OPz0iG')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- 2. Seed Library Staff
 INSERT INTO `library_staff` (`staff_id`, `username`, `password_hash`, `full_name`, `email`, `contact_no`, `role`, `status`)
 VALUES
-('STF-2024-001', 'admin', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'Head Librarian Admin', 'library.admin@cvsu.edu.ph', '09170001111', 'admin', 'active'),
-('STF-2024-002', 'librarian1', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'Maria Elena Santos, RL', 'elena.santos@cvsu.edu.ph', '09170002222', 'librarian', 'active')
+('STF-2024-001', 'admin', '$2y$12$eW2KWovIZjPhqEzYMz2z5ODM27inTndOYQkA8WisPtjRaT0OPz0iG', 'Head Librarian Admin', 'library.admin@cvsu.edu.ph', '09170001111', 'admin', 'active'),
+('STF-2024-002', 'librarian1', '$2y$12$eW2KWovIZjPhqEzYMz2z5ODM27inTndOYQkA8WisPtjRaT0OPz0iG', 'Maria Elena Santos, RL', 'elena.santos@cvsu.edu.ph', '09170002222', 'librarian', 'active')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- 3. Seed Students
 INSERT INTO `students` (`student_number`, `full_name`, `email`, `mobile_number`, `course`, `year_level`, `campus`, `date_of_birth`, `password_hash`, `account_status`)
 VALUES
-('202410001', 'Juan C. Dela Cruz', 'juan.delacruz@cvsu.edu.ph', '09171234567', 'BS Information Technology', '3rd Year', 'Imus Campus', '2004-05-15', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'active'),
-('202410002', 'Maria Clara De Los Reyes', 'maria.delosreyes@cvsu.edu.ph', '09181234568', 'BS Computer Science', '2nd Year', 'Imus Campus', '2005-08-20', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'active'),
-('202410003', 'Paolo M. Gomez', 'paolo.gomez@cvsu.edu.ph', '09191234569', 'BS Business Management', '4th Year', 'Imus Campus', '2003-11-10', '$2y$10$wN1G78p6d/vHwZtYlE4.reVf.9c3uK7nI4.V9E/RkPq3L9q3G.K6a', 'active')
+('202410001', 'Juan C. Dela Cruz', 'juan.delacruz@cvsu.edu.ph', '09171234567', 'BS Information Technology', '3rd Year', 'Imus Campus', '2004-05-15', '$2y$12$IQarQO.S2EBx82MmD2JGIe2l998xyUMvMvkIq64RM.NaxgzIw322q', 'active'),
+('202410002', 'Maria Clara De Los Reyes', 'maria.delosreyes@cvsu.edu.ph', '09181234568', 'BS Computer Science', '2nd Year', 'Imus Campus', '2005-08-20', '$2y$12$IQarQO.S2EBx82MmD2JGIe2l998xyUMvMvkIq64RM.NaxgzIw322q', 'active'),
+('202410003', 'Paolo M. Gomez', 'paolo.gomez@cvsu.edu.ph', '09191234569', 'BS Business Management', '4th Year', 'Imus Campus', '2003-11-10', '$2y$12$IQarQO.S2EBx82MmD2JGIe2l998xyUMvMvkIq64RM.NaxgzIw322q', 'active')
 ON DUPLICATE KEY UPDATE `id`=`id`;
 
 -- 4. Seed Books Catalog (With Call Numbers, Accession Numbers, MARC tag, & Room-Use Only Collections)
