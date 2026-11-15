@@ -6,6 +6,11 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../../backend/config/db.php';
 require_once __DIR__ . '/../../../backend/helpers/FineEngine.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
+
+$authSession = AuthGuard::requireAuth(['admin', 'student']);
+$isStudentScope = ($authSession['user_type'] === 'student');
+$scopedStudentNumber = $authSession['student_number'] ?? '';
 
 try {
     $today = date('Y-m-d');
@@ -20,14 +25,27 @@ try {
     $unpaidFinesTotal = (float) $pdo->query("SELECT COALESCE(SUM(fine_amount), 0) FROM fines WHERE payment_status = 'unpaid'")->fetchColumn();
 
     // 2. Active Loans with live FineEngine projection
-    $stmtLoans = $pdo->query("
-        SELECT bt.*, s.student_number, s.full_name, s.course, b.book_code, b.title, b.call_number
-        FROM borrow_transactions bt
-        JOIN students s ON bt.student_id = s.id
-        JOIN books b ON bt.book_id = b.id
-        WHERE bt.return_status IN ('borrowed', 'overdue')
-        ORDER BY bt.due_date ASC
-    ");
+    if ($isStudentScope) {
+        $stmtLoans = $pdo->prepare("
+            SELECT bt.*, s.student_number, s.full_name, s.course, b.book_code, b.title, b.call_number
+            FROM borrow_transactions bt
+            JOIN students s ON bt.student_id = s.id
+            JOIN books b ON bt.book_id = b.id
+            WHERE bt.return_status IN ('borrowed', 'overdue')
+              AND s.student_number = ?
+            ORDER BY bt.due_date ASC
+        ");
+        $stmtLoans->execute([$scopedStudentNumber]);
+    } else {
+        $stmtLoans = $pdo->query("
+            SELECT bt.*, s.student_number, s.full_name, s.course, b.book_code, b.title, b.call_number
+            FROM borrow_transactions bt
+            JOIN students s ON bt.student_id = s.id
+            JOIN books b ON bt.book_id = b.id
+            WHERE bt.return_status IN ('borrowed', 'overdue')
+            ORDER BY bt.due_date ASC
+        ");
+    }
     $activeLoans = $stmtLoans->fetchAll();
 
     foreach ($activeLoans as &$loan) {
@@ -35,15 +53,29 @@ try {
     }
 
     // 3. Unpaid / Recent Fines
-    $stmtFines = $pdo->query("
-        SELECT f.*, bt.transaction_code, s.student_number, s.full_name, b.title AS book_title
-        FROM fines f
-        JOIN borrow_transactions bt ON f.transaction_id = bt.id
-        JOIN students s ON f.student_id = s.id
-        JOIN books b ON bt.book_id = b.id
-        ORDER BY f.created_at DESC
-        LIMIT 30
-    ");
+    if ($isStudentScope) {
+        $stmtFines = $pdo->prepare("
+            SELECT f.*, bt.transaction_code, s.student_number, s.full_name, b.title AS book_title
+            FROM fines f
+            JOIN borrow_transactions bt ON f.transaction_id = bt.id
+            JOIN students s ON f.student_id = s.id
+            JOIN books b ON bt.book_id = b.id
+            WHERE s.student_number = ?
+            ORDER BY f.created_at DESC
+            LIMIT 30
+        ");
+        $stmtFines->execute([$scopedStudentNumber]);
+    } else {
+        $stmtFines = $pdo->query("
+            SELECT f.*, bt.transaction_code, s.student_number, s.full_name, b.title AS book_title
+            FROM fines f
+            JOIN borrow_transactions bt ON f.transaction_id = bt.id
+            JOIN students s ON f.student_id = s.id
+            JOIN books b ON bt.book_id = b.id
+            ORDER BY f.created_at DESC
+            LIMIT 30
+        ");
+    }
     $fines = $stmtFines->fetchAll();
 
     echo json_encode([

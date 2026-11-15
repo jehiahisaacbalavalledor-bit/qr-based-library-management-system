@@ -176,6 +176,18 @@ CREATE TABLE IF NOT EXISTS `circulation_audit_logs` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `book_reservations` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `student_id` INT NOT NULL,
+  `book_id` INT NOT NULL,
+  `status` ENUM('pending', 'ready_for_pickup', 'fulfilled', 'cancelled') NOT NULL DEFAULT 'pending',
+  `notes` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_res_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_res_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- =========================================================================
 -- SEED DATA: Realistic CvSU Imus Campus Records
 -- =========================================================================

@@ -48,7 +48,33 @@ class AuthGuard
         ];
     }
 
-    public static function requireAdmin(array $allowedRoles = ['Head Librarian', 'Library Staff', 'Library Admin', 'Admin']): void
+    public static function requireAuth(array $allowedTypes = ['admin', 'student']): array
+    {
+        self::startSession();
+        if (empty($_SESSION['user_type'])) {
+            http_response_code(401);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status' => 'error', 'message' => 'Authentication required. Please sign in.']);
+            exit;
+        }
+        if (!in_array($_SESSION['user_type'], $allowedTypes, true)) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status' => 'error', 'message' => 'Access denied for this account type.']);
+            exit;
+        }
+        return self::currentSession();
+    }
+
+    public static function requireAdmin(array $allowedRoles = [
+        'Head Librarian',
+        'Library Staff',
+        'Library Admin',
+        'Admin',
+        'Circulation Desk Officer',
+        'Cataloger',
+        'System Administrator'
+    ]): void
     {
         self::startSession();
         if (empty($_SESSION['user_type']) || $_SESSION['user_type'] !== 'admin') {
@@ -68,7 +94,7 @@ class AuthGuard
 
     public static function requireHeadLibrarian(): void
     {
-        self::requireAdmin(['Head Librarian', 'Library Admin', 'Admin']);
+        self::requireAdmin(['Head Librarian', 'Library Admin', 'Admin', 'System Administrator']);
     }
 
     public static function enforceRoleIfAuthenticated(array $allowedRoles = ['Head Librarian', 'Library Admin', 'Admin']): void

@@ -25,6 +25,7 @@ $allowedTables = [
     'borrow_transactions',
     'fines',
     'library_holidays',
+    'book_reservations',
     'activity_logs',
     'circulation_audit_logs'
 ];

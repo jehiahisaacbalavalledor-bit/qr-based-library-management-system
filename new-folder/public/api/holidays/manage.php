@@ -6,6 +6,7 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../../backend/config/db.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
 try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -19,6 +20,8 @@ try {
         echo json_encode(['status' => 'error', 'message' => 'Method not allowed.']);
         exit;
     }
+
+    AuthGuard::requireAdmin();
 
     $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
     $action = trim($input['action'] ?? 'add');

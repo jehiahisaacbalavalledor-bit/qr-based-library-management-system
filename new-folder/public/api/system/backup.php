@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../../../backend/config/db.php';
 require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
 
-AuthGuard::enforceRoleIfAuthenticated(['Head Librarian', 'Library Admin', 'Admin']);
+AuthGuard::requireHeadLibrarian();
 
 $format = strtolower(trim($_GET['format'] ?? 'sql'));
 $timestamp = date('Y-m-d_His');
@@ -18,6 +18,7 @@ $candidateTables = [
     'borrow_transactions',
     'fines',
     'library_holidays',
+    'book_reservations',
     'activity_logs',
     'circulation_audit_logs'
 ];

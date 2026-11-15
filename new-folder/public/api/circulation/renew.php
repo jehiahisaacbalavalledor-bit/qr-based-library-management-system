@@ -7,6 +7,9 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../../backend/config/db.php';
 require_once __DIR__ . '/../../../backend/helpers/FineEngine.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
+
+$authSession = AuthGuard::requireAuth(['admin', 'student']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -46,6 +49,12 @@ try {
     if (!$tx) {
         http_response_code(404);
         echo json_encode(['status' => 'error', 'message' => "Transaction {$transactionCode} not found."]);
+        exit;
+    }
+
+    if ($authSession['user_type'] === 'student' && $tx['student_number'] !== ($authSession['student_number'] ?? '')) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Permission denied: you may only renew your own borrowed books.']);
         exit;
     }
 

@@ -12,6 +12,15 @@
   const THEME_STORAGE_KEY = 'cvsu_library_theme';
   const STATS_STORAGE_KEY = 'cvsu_library_system_stats';
 
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   // Helper: Toast notification
   function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
@@ -261,6 +270,10 @@
 
       const studentDueTodayCount = activeForStudent.filter(l => l.dueDate === stats.today).length;
       const studentOverdueCount = activeForStudent.filter(l => l.dueDate < stats.today).length;
+      const tomorrowDt = new Date(stats.today + 'T00:00:00');
+      tomorrowDt.setDate(tomorrowDt.getDate() + 1);
+      const tomorrowYmd = engine.toYmd(tomorrowDt);
+      const studentDueSoonCount = activeForStudent.filter(l => l.dueDate === tomorrowYmd).length;
 
       // Update Student Personal Stat Cards
       const statBorrowedEl = document.getElementById('statBorrowedBooks');
@@ -270,20 +283,45 @@
       if (statDueTodayEl) statDueTodayEl.textContent = studentDueTodayCount;
       if (statOverdueEl) statOverdueEl.textContent = `₱${totalStudentFine.toFixed(2)}`;
 
-      // Update Student Due Today Banner dynamically (for this student's books only)
+      // Update Student Due/Overdue/Due-Soon Alert Banner dynamically
       const dueBanner = document.getElementById('dueTodayBanner');
       if (dueBanner) {
         const headingEl = dueBanner.querySelector('h4 span:first-child');
+        const pillEl = dueBanner.querySelector('h4 span:last-child');
         const descEl = dueBanner.querySelector('p');
-        if (studentDueTodayCount > 0 || studentOverdueCount > 0) {
+        const pickupReadyCount = (studentReservations || []).filter(r => r.status === 'ready_for_pickup').length;
+
+        if (studentDueTodayCount > 0 || studentOverdueCount > 0 || studentDueSoonCount > 0 || pickupReadyCount > 0) {
           dueBanner.style.display = '';
+          if (pillEl) {
+            if (studentOverdueCount > 0) {
+              pillEl.textContent = 'OVERDUE ALERT';
+              pillEl.style.background = '#dc2626';
+            } else if (studentDueTodayCount > 0) {
+              pillEl.textContent = 'DUE TODAY';
+              pillEl.style.background = '#ea580c';
+            } else if (studentDueSoonCount > 0) {
+              pillEl.textContent = 'DUE TOMORROW';
+              pillEl.style.background = '#0284c7';
+            } else {
+              pillEl.textContent = 'HOLD READY';
+              pillEl.style.background = '#16a34a';
+            }
+          }
           if (headingEl) {
-            headingEl.textContent = `My Notice: ${studentDueTodayCount} Book(s) Due Today | ${studentOverdueCount} Overdue`;
+            const parts = [];
+            if (studentOverdueCount > 0) parts.push(`${studentOverdueCount} Overdue`);
+            if (studentDueTodayCount > 0) parts.push(`${studentDueTodayCount} Due Today`);
+            if (studentDueSoonCount > 0) parts.push(`${studentDueSoonCount} Due Tomorrow`);
+            if (pickupReadyCount > 0) parts.push(`${pickupReadyCount} Hold Ready for Pickup`);
+            headingEl.textContent = `Library Notice: ${parts.join(' | ')}`;
           }
           if (descEl) {
             descEl.innerHTML = totalStudentFine > 0
               ? `You have <strong>₱${totalStudentFine.toFixed(2)}</strong> in accrued/unpaid fines. Please return overdue books at the <strong>Library Circulation Desk</strong> (₱20.00/day, Fri–Sun &amp; holidays exempted).`
-              : `Please return due books at the <strong>Library Circulation Desk</strong> before <strong>5:00 PM</strong> to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`;
+              : (pickupReadyCount > 0 && studentDueTodayCount === 0 && studentDueSoonCount === 0
+                ? `Your reserved book hold is ready at the <strong>Library Circulation Desk</strong>. Present your Digital Student QR ID Pass to claim it.`
+                : `Please return or renew books before <strong>5:00 PM</strong> on the due date to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`);
           }
         } else {
           dueBanner.style.display = 'none';
@@ -327,11 +365,16 @@
           loansListEl.innerHTML = activeForStudent.map(loan => {
             const calc = engine.calculateOverdueFine(loan.dueDate, stats.today);
             const isDueToday = loan.dueDate === stats.today;
+            const tomorrowCheckDt = new Date(stats.today + 'T00:00:00');
+            tomorrowCheckDt.setDate(tomorrowCheckDt.getDate() + 1);
+            const isDueSoon = loan.dueDate === engine.toYmd(tomorrowCheckDt);
             const badge = calc.isOverdue
               ? `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">OVERDUE (₱${calc.fineAmount.toFixed(2)})</span>`
               : (isDueToday
                 ? `<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">DUE TODAY</span>`
-                : `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">ACTIVE</span>`);
+                : (isDueSoon
+                  ? `<span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">DUE TOMORROW</span>`
+                  : `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">ACTIVE</span>`));
 
             return `
               <div style="border: 1px solid var(--border-subtle); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--bg-main);">
@@ -352,6 +395,74 @@
           }).join('');
         }
       }
+    }
+
+    let studentReservations = [];
+
+    function renderStudentReservations() {
+      const listEl = document.getElementById('studentReservationsList');
+      if (!listEl) return;
+      if (!studentReservations || studentReservations.length === 0) {
+        listEl.innerHTML = `<div style="padding:10px 12px;border:1px dashed var(--border-subtle);border-radius:8px;color:var(--text-secondary);">No active book reservations. Checked-out titles in the catalog above display a <strong>Reserve Book</strong> button.</div>`;
+        return;
+      }
+      listEl.innerHTML = studentReservations.map(r => {
+        const statusColors = {
+          ready_for_pickup: 'background:#dcfce7;color:#166534;',
+          pending: 'background:#fef3c7;color:#92400e;',
+          fulfilled: 'background:#e0f2fe;color:#0369a1;',
+          cancelled: 'background:#f1f5f9;color:#64748b;'
+        };
+        const stStyle = statusColors[r.status] || statusColors.pending;
+        const canCancel = r.status === 'pending' || r.status === 'ready_for_pickup';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-main);">
+            <div>
+              <strong style="color:var(--text-primary);">${escapeHtml(r.title)}</strong>
+              <div style="font-size:11.5px;color:var(--text-secondary);">Book Code: <code>${escapeHtml(r.book_code)}</code> | Call #: ${escapeHtml(r.call_number)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="${stStyle}font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;">${escapeHtml(r.status.replace(/_/g, ' '))}</span>
+              ${canCancel ? `<button type="button" class="btn-cancel-res" data-res-id="${Number(r.id)}" style="padding:4px 9px;font-size:11px;border-radius:6px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;cursor:pointer;font-weight:600;">Cancel</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('.btn-cancel-res').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const engine = window.CvsuCirculationEngine;
+          if (!engine || !engine.API_BASE) return;
+          const id = Number(this.getAttribute('data-res-id'));
+          const res = await fetch(`${engine.API_BASE}books/reservations.php`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cancel', id })
+          });
+          const json = await res.json();
+          showToast(json.message || 'Updated reservation.', json.status === 'success' ? 'success' : 'error');
+          await loadStudentReservations();
+          renderStudentCatalog(document.getElementById('studentCatalogSearch')?.value || '');
+        });
+      });
+    }
+
+    async function loadStudentReservations() {
+      const engine = window.CvsuCirculationEngine;
+      if (!engine || !engine.API_BASE) {
+        renderStudentReservations();
+        return;
+      }
+      try {
+        const res = await fetch(`${engine.API_BASE}books/reservations.php`, { credentials: 'same-origin' });
+        const json = await res.json();
+        if (json.status === 'success' && Array.isArray(json.data)) {
+          studentReservations = json.data;
+        }
+      } catch (e) {}
+      renderStudentReservations();
+      syncCirculationDashboard();
     }
 
     syncCirculationDashboard();
@@ -399,22 +510,57 @@
       }
 
       grid.innerHTML = filtered.map(b => {
+        const activeHold = (studentReservations || []).find(
+          r => r.book_code === b.code && (r.status === 'pending' || r.status === 'ready_for_pickup')
+        );
         const badge = b.roomOnly
           ? `<span style="background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">🔒 Room Use Only</span>`
           : (b.available > 0
             ? `<span style="background:#dcfce7;color:#166534;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">✓ ${b.available} of ${b.total} Available</span>`
             : `<span style="background:#fee2e2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">Checked Out</span>`);
 
+        const reserveAction = (!b.roomOnly && b.available === 0)
+          ? (activeHold
+            ? `<span style="font-size:11px;font-weight:700;color:#0284c7;margin-left:8px;">✓ Reserved (${escapeHtml(activeHold.status.replace(/_/g, ' '))})</span>`
+            : `<button type="button" class="btn-reserve-book" data-book-code="${escapeHtml(b.code)}" style="margin-left:8px;padding:3px 9px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid #0284c7;background:#eff6ff;color:#0369a1;cursor:pointer;">📌 Reserve Book</button>`)
+          : '';
+
         return `
           <div class="borrow-book-option" style="cursor: default;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
-              <h4 style="margin:0;">${b.title}</h4>
+              <h4 style="margin:0;">${escapeHtml(b.title)}</h4>
             </div>
-            <p style="margin:0 0 6px 0;">Author: ${b.author} | Call #: <strong>${b.callNo}</strong></p>
-            <div>${badge}</div>
+            <p style="margin:0 0 6px 0;">Author: ${escapeHtml(b.author)} | Call #: <strong>${escapeHtml(b.callNo)}</strong></p>
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${badge}${reserveAction}</div>
           </div>
         `;
       }).join('');
+
+      grid.querySelectorAll('.btn-reserve-book').forEach(btn => {
+        btn.addEventListener('click', async function () {
+          const engine = window.CvsuCirculationEngine;
+          if (!engine || !engine.API_BASE) {
+            showToast('Reservations require active server connection.', 'error');
+            return;
+          }
+          const bookCode = this.getAttribute('data-book-code');
+          this.disabled = true;
+          try {
+            const res = await fetch(`${engine.API_BASE}books/reservations.php`, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'reserve', bookCode })
+            });
+            const json = await res.json();
+            showToast(json.message || 'Reservation request processed.', json.status === 'success' ? 'success' : 'error');
+            await loadStudentReservations();
+            renderStudentCatalog(document.getElementById('studentCatalogSearch')?.value || '');
+          } finally {
+            this.disabled = false;
+          }
+        });
+      });
     }
 
     renderStudentCatalog('');
@@ -426,6 +572,7 @@
           const searchVal = document.getElementById('studentCatalogSearch')?.value || '';
           renderStudentCatalog(searchVal);
         }
+        loadStudentReservations();
       });
     }
 

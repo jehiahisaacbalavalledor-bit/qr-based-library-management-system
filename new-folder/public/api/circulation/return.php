@@ -7,6 +7,9 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../../backend/config/db.php';
 require_once __DIR__ . '/../../../backend/helpers/FineEngine.php';
+require_once __DIR__ . '/../../../backend/helpers/AuthGuard.php';
+
+AuthGuard::requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
