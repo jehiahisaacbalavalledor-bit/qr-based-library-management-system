@@ -81,6 +81,43 @@ body.dashboard-body {
   width: var(--sidebar-collapsed-width);
 }
 
+.app-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 20px 12px;
+}
+
+.app-sidebar.collapsed .sidebar-logo-icon,
+.app-sidebar.collapsed .sidebar-title-group,
+.app-sidebar.collapsed .sidebar-menu li a span:not(.menu-icon),
+.app-sidebar.collapsed .btn-sidebar-logout span {
+  display: none;
+}
+
+.sidebar-collapse-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.app-sidebar.collapsed .sidebar-collapse-btn {
+  margin-left: 0;
+}
+
+.app-topbar .mobile-sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-topbar .mobile-sidebar-toggle {
+    display: inline-flex;
+  }
+}
+
+.app-sidebar.collapsed .sidebar-menu li a,
+.app-sidebar.collapsed .btn-sidebar-logout {
+  justify-content: center;
+  padding: 10px;
+}
+
 .sidebar-header {
   padding: 20px 18px;
   display: flex;
@@ -958,4 +995,49 @@ body.dark-theme .student-badge-status {
   .info-list {
     grid-template-columns: 1fr;
   }
+}
+
+/* Student Portal Sidebar Tab View Isolation */
+.dashboard-content-body[data-active-view="qr"] .welcome-hero-banner,
+.dashboard-content-body[data-active-view="qr"] .due-today-banner,
+.dashboard-content-body[data-active-view="qr"] .stats-overview-grid,
+.dashboard-content-body[data-active-view="qr"] .portal-content-column {
+  display: none;
+}
+
+.dashboard-content-body[data-active-view="qr"] .portal-main-grid {
+  grid-template-columns: minmax(280px, 420px);
+  justify-content: center;
+}
+
+.dashboard-content-body[data-active-view="loans"] .welcome-hero-banner,
+.dashboard-content-body[data-active-view="loans"] .stats-overview-grid,
+.dashboard-content-body[data-active-view="loans"] #studentQrCard,
+.dashboard-content-body[data-active-view="loans"] #catalogLookupSection,
+.dashboard-content-body[data-active-view="loans"] #studentProfileSection {
+  display: none;
+}
+
+.dashboard-content-body[data-active-view="catalog"] .welcome-hero-banner,
+.dashboard-content-body[data-active-view="catalog"] .due-today-banner,
+.dashboard-content-body[data-active-view="catalog"] .stats-overview-grid,
+.dashboard-content-body[data-active-view="catalog"] #studentQrCard,
+.dashboard-content-body[data-active-view="catalog"] #myLoansSection,
+.dashboard-content-body[data-active-view="catalog"] #studentProfileSection {
+  display: none;
+}
+
+.dashboard-content-body[data-active-view="profile"] .welcome-hero-banner,
+.dashboard-content-body[data-active-view="profile"] .due-today-banner,
+.dashboard-content-body[data-active-view="profile"] .stats-overview-grid,
+.dashboard-content-body[data-active-view="profile"] #studentQrCard,
+.dashboard-content-body[data-active-view="profile"] #myLoansSection,
+.dashboard-content-body[data-active-view="profile"] #catalogLookupSection {
+  display: none;
+}
+
+.dashboard-content-body[data-active-view="loans"] .portal-main-grid,
+.dashboard-content-body[data-active-view="catalog"] .portal-main-grid,
+.dashboard-content-body[data-active-view="profile"] .portal-main-grid {
+  grid-template-columns: 1fr;
 }

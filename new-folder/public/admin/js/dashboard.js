@@ -135,17 +135,90 @@
       });
     }
 
-    // 4. Sidebar Responsive Toggle
+    // 4. Sidebar Responsive Toggle & Student Portal View Switching
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
     const appSidebar = document.getElementById('appSidebar');
-    if (sidebarToggle && appSidebar) {
-      sidebarToggle.addEventListener('click', function () {
-        if (window.innerWidth <= 768) {
+    if (appSidebar) {
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function () {
+          if (window.innerWidth <= 768) {
+            appSidebar.classList.toggle('mobile-open');
+          } else {
+            appSidebar.classList.toggle('collapsed');
+          }
+        });
+      }
+
+      if (mobileSidebarToggle) {
+        mobileSidebarToggle.addEventListener('click', function () {
           appSidebar.classList.toggle('mobile-open');
-        } else {
-          appSidebar.classList.toggle('collapsed');
+        });
+      }
+
+      document.addEventListener('click', function (e) {
+        if (
+          window.innerWidth <= 768 &&
+          appSidebar.classList.contains('mobile-open') &&
+          !appSidebar.contains(e.target) &&
+          !(sidebarToggle && sidebarToggle.contains(e.target)) &&
+          !(mobileSidebarToggle && mobileSidebarToggle.contains(e.target))
+        ) {
+          appSidebar.classList.remove('mobile-open');
         }
       });
+    }
+
+    const dashboardContentBody = document.getElementById('dashboardContentBody');
+    const sidebarViewLinks = document.querySelectorAll('.sidebar-menu a[data-view]');
+    const switchViewButtons = document.querySelectorAll('[data-switch-view]');
+
+    function setActiveStudentView(viewName) {
+      if (!dashboardContentBody) return;
+      const validViews = ['dashboard', 'qr', 'loans', 'catalog', 'profile'];
+      const targetView = validViews.includes(viewName) ? viewName : 'dashboard';
+      dashboardContentBody.setAttribute('data-active-view', targetView);
+
+      sidebarViewLinks.forEach(link => {
+        const li = link.closest('li');
+        if (!li) return;
+        li.classList.toggle('active', link.getAttribute('data-view') === targetView);
+      });
+
+      if (appSidebar && window.innerWidth <= 768) {
+        appSidebar.classList.remove('mobile-open');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (dashboardContentBody && sidebarViewLinks.length > 0) {
+      sidebarViewLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          const view = this.getAttribute('data-view');
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            history.replaceState(null, '', href);
+          }
+          setActiveStudentView(view);
+        });
+      });
+
+      switchViewButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+          setActiveStudentView(this.getAttribute('data-switch-view'));
+        });
+      });
+
+      const hashToView = {
+        '#studentQrSection': 'qr',
+        '#myLoansSection': 'loans',
+        '#catalogLookupSection': 'catalog',
+        '#studentProfileSection': 'profile'
+      };
+      if (hashToView[window.location.hash]) {
+        setActiveStudentView(hashToView[window.location.hash]);
+      }
     }
 
     // 5. Generate Official Student Digital QR ID Pass
