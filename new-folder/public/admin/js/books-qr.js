@@ -363,7 +363,7 @@
         localStorage.setItem(LATEST_BOOK_SCAN_KEY, JSON.stringify(bookPayload));
         showToast(`Book QR loaded! Opening circulation scanner...`, 'info');
         setTimeout(() => {
-          window.location.href = 'scanner.html';
+          window.location.href = '../transactions/scanner.html';
         }, 500);
       });
     }

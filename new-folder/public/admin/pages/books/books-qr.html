@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book QR Code Generator & Label Printer - CvSU Imus Campus</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/dashboard.css">
-  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="../../../user/css/style.css">
+  <link rel="stylesheet" href="../../../user/css/dashboard.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/images/logo.svg">
   <style>
     /* Book QR Specific Styles */
     .book-qr-container {
@@ -319,7 +319,7 @@
       
       <header class="app-topbar">
         <div class="topbar-left">
-          <a href="dashboard.html" class="topbar-pill-btn" style="text-decoration: none;">
+          <a href="../../../user/pages/dashboard.html" class="topbar-pill-btn" style="text-decoration: none;">
             &larr; Return to Dashboard
           </a>
           <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">
@@ -328,7 +328,7 @@
         </div>
 
         <div class="topbar-right">
-          <a href="scanner.html" class="topbar-pill-btn" style="text-decoration: none; color: #00a65a; border-color: #00a65a; font-weight: 600;">
+          <a href="../transactions/scanner.html" class="topbar-pill-btn" style="text-decoration: none; color: #00a65a; border-color: #00a65a; font-weight: 600;">
             📷 Open Scanner
           </a>
           <button type="button" class="topbar-pill-btn" id="darkModeToggle">
@@ -542,7 +542,7 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="js/qrcode.min.js"></script>
-  <script src="js/books-qr.js"></script>
+  <script src="../../../assets/vendor/qrcode/qrcode.min.js"></script>
+  <script src="../../js/books-qr.js"></script>
 </body>
 </html>

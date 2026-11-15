@@ -122,9 +122,11 @@
           mobile: obj.mobile || '09171234567',
           book: obj.book || obj.bookTitle || 'General Library Access',
           callNo: obj.callNo || obj.callNumber || 'GEN-LIB',
+          bookCode: obj.bookCode || 'BK-LIB',
+          loanType: obj.loanType || '3_days',
           ref: obj.ref || obj.referenceNo || ('REF-' + Math.floor(1000 + Math.random() * 9000)),
           borrowDate: obj.borrowDate || new Date().toISOString().split('T')[0],
-          dueDate: obj.dueDate || new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
+          dueDate: obj.dueDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]
         };
       }
     } catch (e) {
@@ -225,6 +227,8 @@
     const resBookTitle = document.getElementById('resBookTitle');
     const resCallNo = document.getElementById('resCallNo');
     const resDueDate = document.getElementById('resDueDate');
+    const resLoanDurationLabel = document.getElementById('resLoanDurationLabel');
+    const resActiveQuota = document.getElementById('resActiveQuota');
 
     if (resRefCode) resRefCode.textContent = parsed.ref;
     if (resStudentName) resStudentName.textContent = parsed.name;
@@ -234,6 +238,22 @@
     if (resBookTitle) resBookTitle.textContent = parsed.book;
     if (resCallNo) resCallNo.textContent = parsed.callNo;
     if (resDueDate) resDueDate.textContent = parsed.dueDate;
+    if (resLoanDurationLabel) {
+      const labels = { '1_day': '1 Day', '2_days': '2 Days', '3_days': '3 Days', 'overnight': 'Overnight (10:00 AM)' };
+      resLoanDurationLabel.textContent = labels[parsed.loanType] || '3 Days';
+    }
+    if (resActiveQuota && window.CvsuCirculationEngine) {
+      const engine = window.CvsuCirculationEngine;
+      const activeCount = engine.getActiveLoansForStudent(parsed.studentNo).length;
+      resActiveQuota.textContent = `Active Quota: ${activeCount} / ${engine.MAX_ACTIVE_BOOKS} Books`;
+      if (activeCount >= engine.MAX_ACTIVE_BOOKS) {
+        resActiveQuota.style.background = '#fee2e2';
+        resActiveQuota.style.color = '#dc2626';
+      } else {
+        resActiveQuota.style.background = '#dcfce7';
+        resActiveQuota.style.color = '#166534';
+      }
+    }
 
     if (parsed.isRoomUseOnly) {
       showToast(`🔒 Special Collection Alert: Room Use Only inside Library!`, 'error');
@@ -346,9 +366,150 @@
     if (statusText) statusText.innerHTML = '<span>Camera stopped. Click Start Camera</span>';
   }
 
+  // Render Smart Circulation Desk: Active Loans & Live Fine Engine
+  function renderSmartCirculationDesk() {
+    const engine = window.CvsuCirculationEngine;
+    if (!engine) return;
+
+    const simDateInput = document.getElementById('simReturnDate');
+    const assessmentDate = (simDateInput && simDateInput.value) ? simDateInput.value : engine.toYmd(new Date());
+
+    const activeTbody = document.getElementById('activeLoansTbody');
+    if (activeTbody) {
+      const loans = engine.getLoans().filter(l => l.status === 'borrowed' || l.status === 'overdue');
+      activeTbody.innerHTML = '';
+
+      if (loans.length === 0) {
+        activeTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">No active borrowed books. Scan a QR code above to issue a loan.</td></tr>`;
+      } else {
+        loans.forEach(loan => {
+          const calc = engine.calculateOverdueFine(loan.dueDate, assessmentDate);
+          const isDueToday = loan.dueDate === assessmentDate;
+          const statusBadge = calc.isOverdue
+            ? `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">OVERDUE</span>`
+            : (isDueToday
+              ? `<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">DUE TODAY</span>`
+              : `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">ACTIVE</span>`);
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${loan.ref}</code><br>${statusBadge}</td>
+            <td><strong>${loan.studentName}</strong><br><span style="font-size:11.5px;color:#64748b;">${loan.studentNo}</span></td>
+            <td><strong>${loan.bookTitle}</strong><br><span style="font-size:11.5px;color:#64748b;">${loan.callNo} (${loan.loanType})</span></td>
+            <td><strong>${loan.dueDate}</strong><br><span style="font-size:11px;color:#64748b;">Due ${loan.dueTime || '17:00'}</span></td>
+            <td>
+              <strong>${calc.overdueDays}</strong> chargeable day(s)<br>
+              <span style="font-size:11px;color:#64748b;">Skipped ${calc.skippedDays} Fri–Sun/Holiday</span>
+            </td>
+            <td><strong style="color:${calc.fineAmount > 0 ? '#dc2626' : '#16a34a'};font-size:14px;">₱${calc.fineAmount.toFixed(2)}</strong></td>
+            <td>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <select class="return-condition-select" data-ref="${loan.ref}" style="padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:11.5px;">
+                  <option value="good">Good</option>
+                  <option value="damaged">Damaged</option>
+                  <option value="lost">Lost</option>
+                </select>
+                <button type="button" class="btn-cam btn-process-return" data-ref="${loan.ref}" style="padding:4px 10px;font-size:11.5px;background:#00a65a;color:#fff;border-color:#008f4c;">
+                  Return
+                </button>
+              </div>
+            </td>
+          `;
+          activeTbody.appendChild(tr);
+        });
+
+        activeTbody.querySelectorAll('.btn-process-return').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const ref = this.getAttribute('data-ref');
+            const selectEl = activeTbody.querySelector(`.return-condition-select[data-ref="${ref}"]`);
+            const condition = selectEl ? selectEl.value : 'good';
+            const res = engine.returnBook(ref, assessmentDate, condition);
+            if (res.ok) {
+              const logs = getScanLogs();
+              logs.push({
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString(),
+                studentNo: res.loan.studentNo,
+                name: res.loan.studentName,
+                course: res.loan.course,
+                book: res.loan.bookTitle,
+                ref: res.loan.ref,
+                status: res.fineCalculation.fineAmount > 0 ? `RETURNED (₱${res.fineCalculation.fineAmount})` : 'RETURNED'
+              });
+              saveScanLogs(logs);
+              renderScanLogsTable();
+              renderSmartCirculationDesk();
+              showToast(res.message, res.fineCalculation.fineAmount > 0 ? 'error' : 'success');
+            } else {
+              showToast(res.message, 'error');
+            }
+          });
+        });
+      }
+    }
+
+    const finesTbody = document.getElementById('finesLedgerTbody');
+    if (finesTbody) {
+      const fines = engine.getFines();
+      finesTbody.innerHTML = '';
+
+      if (fines.length === 0) {
+        finesTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 16px;">No overdue fines or replacement penalties recorded.</td></tr>`;
+      } else {
+        fines.forEach(fine => {
+          const badge = fine.paymentStatus === 'paid'
+            ? `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">PAID</span>`
+            : (fine.paymentStatus === 'waived'
+              ? `<span style="background:#e2e8f0;color:#475569;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">WAIVED</span>`
+              : `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">UNPAID</span>`);
+
+          const replacementNote = fine.replacementStatus === 'pending_replacement'
+            ? `<div style="font-size:11px;color:#b45309;font-weight:600;">⚠ Identical Replacement Required</div>`
+            : '';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><code>${fine.ref}</code></td>
+            <td><strong>${fine.studentName}</strong><br><span style="font-size:11.5px;color:#64748b;">${fine.studentNo}</span></td>
+            <td>${fine.bookTitle}${replacementNote}</td>
+            <td>${fine.overdueDays} days (Skipped ${fine.skippedDays})</td>
+            <td><strong style="color:#dc2626;">₱${Number(fine.fineAmount).toFixed(2)}</strong></td>
+            <td>${badge}</td>
+            <td>
+              ${fine.paymentStatus === 'unpaid' ? `
+                <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="paid" style="padding:3px 8px;font-size:11px;background:#00a65a;color:#fff;">Mark Paid</button>
+                <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="waived" style="padding:3px 8px;font-size:11px;">Waive</button>
+              ` : `<span style="font-size:11.5px;color:#64748b;">Settled</span>`}
+            </td>
+          `;
+          finesTbody.appendChild(tr);
+        });
+
+        finesTbody.querySelectorAll('.btn-settle-fine').forEach(btn => {
+          btn.addEventListener('click', function () {
+            const fineId = this.getAttribute('data-id');
+            const action = this.getAttribute('data-action');
+            if (engine.settleFine(fineId, action)) {
+              renderSmartCirculationDesk();
+              showToast(`Fine marked as ${action.toUpperCase()}.`, 'success');
+            }
+          });
+        });
+      }
+    }
+  }
+
   // DOM Loaded
   document.addEventListener('DOMContentLoaded', function () {
     renderScanLogsTable();
+
+    const simReturnDate = document.getElementById('simReturnDate');
+    if (simReturnDate && window.CvsuCirculationEngine) {
+      simReturnDate.value = window.CvsuCirculationEngine.toYmd(new Date());
+      simReturnDate.addEventListener('change', function () {
+        renderSmartCirculationDesk();
+      });
+    }
+    renderSmartCirculationDesk();
 
     // Start / Stop Camera Buttons
     const startCamBtn = document.getElementById('startCamBtn');
@@ -497,6 +658,29 @@
     if (approveBtn) {
       approveBtn.addEventListener('click', function () {
         if (!currentDecodedData) return;
+
+        // Enforce 2-book limit, Room-Use-Only, and Unpaid Fines via Smart Circulation Engine
+        if (window.CvsuCirculationEngine) {
+          const checkoutRes = window.CvsuCirculationEngine.checkoutBook({
+            studentNo: currentDecodedData.studentNo,
+            studentName: currentDecodedData.name,
+            course: currentDecodedData.course,
+            bookCode: currentDecodedData.bookCode || 'BK-LIB',
+            bookTitle: currentDecodedData.book,
+            callNo: currentDecodedData.callNo,
+            loanType: currentDecodedData.loanType || '3_days',
+            borrowDate: currentDecodedData.borrowDate,
+            dueDate: currentDecodedData.dueDate,
+            ref: currentDecodedData.ref,
+            isRoomUseOnly: Boolean(currentDecodedData.isRoomUseOnly)
+          });
+
+          if (!checkoutRes.ok) {
+            showToast(`❌ ${checkoutRes.message}`, 'error');
+            return;
+          }
+          renderSmartCirculationDesk();
+        }
 
         const now = new Date();
         const timeFormatted = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString();

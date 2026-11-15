@@ -170,6 +170,72 @@
       });
     }
 
+    // 5B. Sync Live Circulation Stats, Due Today Banner & 2-Book Quota
+    function syncCirculationDashboard() {
+      if (!window.CvsuCirculationEngine) return;
+      const engine = window.CvsuCirculationEngine;
+      const stats = engine.getDashboardStats();
+      const activeForStudent = engine.getActiveLoansForStudent(currentUser.studentNumber);
+      const unpaidForStudent = engine.getUnpaidFinesForStudent(currentUser.studentNumber);
+
+      // Update Stat Cards
+      const statBorrowedEl = document.getElementById('statBorrowedBooks');
+      const statOverdueEl = document.getElementById('statOverdueBooks');
+      if (statBorrowedEl) statBorrowedEl.textContent = stats.activeBorrowedCount;
+      if (statOverdueEl) statOverdueEl.textContent = stats.overdueCount;
+
+      // Update Due Today Banner dynamically
+      const dueBanner = document.getElementById('dueTodayBanner');
+      if (dueBanner) {
+        const headingEl = dueBanner.querySelector('h4 span:first-child');
+        const descEl = dueBanner.querySelector('p');
+        if (stats.dueTodayCount > 0 || stats.overdueCount > 0) {
+          dueBanner.style.display = '';
+          if (headingEl) {
+            headingEl.textContent = `Due Today: ${stats.dueTodayCount} Book(s) | Overdue: ${stats.overdueCount} Book(s)`;
+          }
+          if (descEl) {
+            descEl.innerHTML = `Projected overdue penalties: <strong>₱${stats.projectedOverdueTotal.toFixed(2)}</strong>. Return or renew before <strong>5:00 PM</strong> to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`;
+          }
+        } else {
+          dueBanner.style.display = 'none';
+        }
+      }
+
+      // Update Student 2-Book Quota Banner
+      const quotaLabel = document.getElementById('studentActiveCountLabel');
+      const fineLabel = document.getElementById('studentFineStatusLabel');
+      const quotaBanner = document.getElementById('studentQuotaBanner');
+
+      if (quotaLabel) {
+        quotaLabel.textContent = `${activeForStudent.length} / ${engine.MAX_ACTIVE_BOOKS} Books`;
+        quotaLabel.style.color = activeForStudent.length >= engine.MAX_ACTIVE_BOOKS ? '#dc2626' : '#0f172a';
+      }
+
+      const unpaidSum = unpaidForStudent.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
+      const liveOverdueSum = activeForStudent.reduce((s, l) => s + engine.calculateOverdueFine(l.dueDate, stats.today).fineAmount, 0);
+
+      if (fineLabel) {
+        if (unpaidSum > 0) {
+          fineLabel.textContent = `⚠ Unpaid Fine: ₱${unpaidSum.toFixed(2)}`;
+          fineLabel.style.color = '#dc2626';
+        } else if (liveOverdueSum > 0) {
+          fineLabel.textContent = `⚠ Overdue Accrued: ₱${liveOverdueSum.toFixed(2)}`;
+          fineLabel.style.color = '#d97706';
+        } else {
+          fineLabel.textContent = '✓ No Unpaid Fines';
+          fineLabel.style.color = '#15803d';
+        }
+      }
+
+      if (quotaBanner && (activeForStudent.length >= engine.MAX_ACTIVE_BOOKS || unpaidSum > 0)) {
+        quotaBanner.style.background = '#fef2f2';
+        quotaBanner.style.borderColor = '#fecaca';
+      }
+    }
+
+    syncCirculationDashboard();
+
     // 6. Loan Type & Deadline Selection
     let selectedLoanDays = 3; // Default 3 days loan
     let isOvernight = false;
@@ -233,7 +299,7 @@
     const openScannerFromBannerBtn = document.getElementById('openScannerFromBannerBtn');
     if (openScannerFromBannerBtn) {
       openScannerFromBannerBtn.addEventListener('click', function () {
-        window.location.href = 'scanner.html';
+        window.location.href = '../../admin/pages/transactions/scanner.html';
       });
     }
 
@@ -254,17 +320,34 @@
     const generateBtn = document.getElementById('generateBorrowQrBtn');
     if (generateBtn) {
       generateBtn.addEventListener('click', function () {
-        const today = new Date();
-        const dueDate = new Date();
+        const engine = window.CvsuCirculationEngine;
+        const loanTypeKey = isOvernight ? 'overnight' : `${selectedLoanDays}_days`;
 
-        if (isOvernight) {
-          dueDate.setDate(today.getDate() + 1);
-        } else {
-          dueDate.setDate(today.getDate() + selectedLoanDays);
+        // Enforce 2-Book Limit & Unpaid Fines before generating QR Borrow Slip
+        if (engine) {
+          const activeLoans = engine.getActiveLoansForStudent(currentUser.studentNumber);
+          if (activeLoans.length >= engine.MAX_ACTIVE_BOOKS) {
+            showToast(`Borrowing Limit Reached: You already have ${activeLoans.length}/${engine.MAX_ACTIVE_BOOKS} active books. Please return a book first.`, 'error');
+            return;
+          }
+          const unpaidFines = engine.getUnpaidFinesForStudent(currentUser.studentNumber);
+          const unpaidSum = unpaidFines.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
+          if (unpaidSum > 0) {
+            showToast(`Action Blocked: You have ₱${unpaidSum.toFixed(2)} in unpaid overdue fines. Settle fines at the circulation desk first.`, 'error');
+            return;
+          }
         }
 
-        const borrowDateStr = today.toISOString().split('T')[0];
-        const dueDateStr = dueDate.toISOString().split('T')[0];
+        const borrowDateStr = engine ? engine.toYmd(new Date()) : new Date().toISOString().split('T')[0];
+        const dueInfo = engine
+          ? engine.computeDueDate(borrowDateStr, loanTypeKey)
+          : {
+              dueDate: new Date(Date.now() + (isOvernight ? 1 : selectedLoanDays) * 86400000).toISOString().split('T')[0],
+              dueTime: isOvernight ? '10:00 AM' : '17:00',
+              label: isOvernight ? 'Overnight' : `${selectedLoanDays} Days`
+            };
+
+        const dueDateStr = dueInfo.dueDate;
         const refNo = 'BRW-2026-' + Math.floor(1000 + Math.random() * 9000);
 
         if (slipStudentName) slipStudentName.textContent = studentNameDisplay;
@@ -272,8 +355,8 @@
         if (slipCourse) slipCourse.textContent = currentUser.course || 'BS Information Technology';
         if (slipBookTitle) slipBookTitle.textContent = selectedBook.title;
         if (slipCallNo) slipCallNo.textContent = selectedBook.callNo;
-        if (slipDueDate) slipDueDate.textContent = dueDateStr;
-        if (slipLoanTypeLabel) slipLoanTypeLabel.textContent = isOvernight ? 'Overnight' : `${selectedLoanDays} Days`;
+        if (slipDueDate) slipDueDate.textContent = `${dueDateStr} (${dueInfo.dueTime})`;
+        if (slipLoanTypeLabel) slipLoanTypeLabel.textContent = dueInfo.label;
         if (slipRefCode) slipRefCode.textContent = `REF: ${refNo}`;
 
         // Build Payload containing student and book information
@@ -289,7 +372,7 @@
           ref: refNo,
           borrowDate: borrowDateStr,
           dueDate: dueDateStr,
-          loanType: isOvernight ? 'overnight' : `${selectedLoanDays}_days`
+          loanType: loanTypeKey
         };
 
         // Cache into localStorage for 1-click test scan in scanner.html
@@ -344,7 +427,7 @@
     if (cardTransactions) {
       cardTransactions.addEventListener('click', function () {
         showToast('Transactions: Redirecting to circulation desk records...', 'info');
-        window.location.href = 'scanner.html';
+        window.location.href = '../../admin/pages/transactions/scanner.html';
       });
     }
 
@@ -369,7 +452,7 @@
         sessionStorage.removeItem(SESSION_USER_KEY);
         showToast('Signed out successfully.', 'info');
         setTimeout(() => {
-          window.location.href = 'index.html';
+          window.location.href = '../../index.html';
         }, 500);
       });
     }

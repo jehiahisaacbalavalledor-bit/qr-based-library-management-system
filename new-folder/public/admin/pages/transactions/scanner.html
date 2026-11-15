@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Library QR Scanner - Cavite State University Imus Campus</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="../../../user/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/images/logo.svg">
   <style>
     body {
       background-color: #f1f5f9;
@@ -437,14 +437,14 @@
     </div>
 
     <div class="nav-user-controls">
-      <a href="books-qr.html" class="btn-nav-portal" title="Official Book QR Generator" style="color: #00a65a; border-color: #00a65a;">
+      <a href="../books/books-qr.html" class="btn-nav-portal" title="Official Book QR Generator" style="color: #00a65a; border-color: #00a65a;">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
         </svg>
         <span>Book QR Generator</span>
       </a>
-      <a href="dashboard.html" class="btn-nav-portal">
+      <a href="../../../user/pages/dashboard.html" class="btn-nav-portal">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -452,7 +452,7 @@
         <span>Student Portal</span>
       </a>
 
-      <a href="index.html" class="btn-nav-portal">
+      <a href="../../../index.html" class="btn-nav-portal">
         Sign In
       </a>
     </div>
@@ -600,13 +600,18 @@
 
           <!-- Book Borrowing Highlight Card -->
           <div class="book-highlight-box" id="bookDetailsHighlight">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #15803d; margin-bottom: 4px;">
-              📖 Selected Library Book to Borrow:
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 6px;">
+              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #15803d;">
+                📖 Selected Library Book to Borrow:
+              </div>
+              <div id="resActiveQuota" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #dcfce7; color: #166534;">
+                Active Quota: 0 / 2 Books
+              </div>
             </div>
             <h4 id="resBookTitle">Clean Code: A Handbook of Agile Software Craftsmanship</h4>
             <p>
               Call Number: <strong id="resCallNo">QA 76.6 .C67</strong> | 
-              Loan Due Date: <strong id="resDueDate">Nov 21, 2026</strong> (14 Days)
+              Loan Due Date: <strong id="resDueDate">Nov 21, 2026</strong> (<span id="resLoanDurationLabel">3 Days</span>)
             </p>
           </div>
 
@@ -628,6 +633,68 @@
       </section>
 
     </div>
+
+    <!-- Smart Circulation Desk: Active Loans & Fine Engine (₱20/day skipping Fri–Sun & Holidays) -->
+    <section class="table-container-card" id="smartCirculationDeskSection">
+      <div class="table-header-row" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="margin: 0 0 4px 0;">
+            ⚖️ Smart Circulation Desk &amp; Fine Engine
+          </h3>
+          <p style="font-size: 12px; color: #64748b; margin: 0;">
+            Enforces <strong>2-book limit</strong>, <strong>1–3 day / overnight deadlines</strong>, and <strong>₱20/day penalty</strong> (automatically skipping Fri–Sun &amp; holidays).
+          </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <label for="simReturnDate" style="font-size: 12px; font-weight: 600; color: #334155;">Return / Assessment Date:</label>
+          <input type="date" id="simReturnDate" style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
+        </div>
+      </div>
+
+      <div style="overflow-x: auto; margin-top: 10px;">
+        <table class="circulation-table">
+          <thead>
+            <tr>
+              <th>Ref #</th>
+              <th>Borrower</th>
+              <th>Book Title</th>
+              <th>Due Date</th>
+              <th>Chargeable / Skipped Days</th>
+              <th>Live Penalty</th>
+              <th>Return Action</th>
+            </tr>
+          </thead>
+          <tbody id="activeLoansTbody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Fines & Penalties Ledger -->
+      <div style="margin-top: 22px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #1e293b;">
+          💰 Fines &amp; Replacement Ledger
+        </h4>
+        <div style="overflow-x: auto;">
+          <table class="circulation-table">
+            <thead>
+              <tr>
+                <th>Ref #</th>
+                <th>Student</th>
+                <th>Book</th>
+                <th>Chargeable Days</th>
+                <th>Fine Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="finesLedgerTbody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
     <!-- Bottom: Recent Circulation Scans Activity Log -->
     <section class="table-container-card">
@@ -666,6 +733,7 @@
 
   </main>
 
-  <script src="js/scanner.js"></script>
+  <script src="../../../assets/js/circulation-engine.js"></script>
+  <script src="../../js/scanner.js"></script>
 </body>
 </html>

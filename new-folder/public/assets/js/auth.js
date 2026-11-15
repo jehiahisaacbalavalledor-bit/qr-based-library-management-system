@@ -7,6 +7,10 @@
 (function () {
   'use strict';
 
+  // Resolve public/ base URL from script location (assets/js/auth.js -> ../../)
+  const SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
+  const PUBLIC_BASE = SCRIPT_SRC ? new URL('../../', SCRIPT_SRC).href : '';
+
   // Storage Keys
   const STORAGE_USERS_KEY = 'cvsu_library_registered_users';
   const SESSION_USER_KEY = 'cvsu_library_current_user';
@@ -239,7 +243,7 @@
         // Attempt 1: REST API
         if (window.location.protocol !== 'file:') {
           try {
-            const apiRes = await fetch('api/login.php', {
+            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/login.php`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -261,7 +265,7 @@
                 sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(loggedInUser));
                 showToast('API Login verified! Redirecting...', 'success');
                 setTimeout(() => {
-                  window.location.href = 'dashboard.html';
+                  window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
                 }, 700);
                 return;
               } else if (resData.message) {
@@ -287,7 +291,7 @@
             sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(matchedUser));
             showToast('Sign in successful! Redirecting to library portal...', 'success');
             setTimeout(() => {
-              window.location.href = 'dashboard.html';
+              window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
             }, 800);
           } else {
             submitBtn.disabled = false;
@@ -361,7 +365,7 @@
         // Attempt 1: Call Backend REST API (api/adminLogin.php)
         if (window.location.protocol !== 'file:') {
           try {
-            const apiRes = await fetch('api/adminLogin.php', {
+            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/adminLogin.php`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -385,7 +389,7 @@
                 sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
                 showToast(resData.message || 'Staff authenticated via API! Redirecting...', 'success');
                 setTimeout(() => {
-                  window.location.href = 'admin-dashboard.html';
+                  window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
                 }, 700);
                 return;
               } else if (resData.message) {
@@ -424,7 +428,7 @@
             showToast(`Welcome back, ${adminObj.fullName}! Loading Admin Console...`, 'success');
 
             setTimeout(() => {
-              window.location.href = 'admin-dashboard.html';
+              window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
             }, 800);
           } else {
             submitBtn.disabled = false;
@@ -498,7 +502,7 @@
         // Attempt 1: Call Backend REST API (api/adminRegister.php)
         if (window.location.protocol !== 'file:') {
           try {
-            const apiRes = await fetch('api/adminRegister.php', {
+            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/adminRegister.php`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -524,7 +528,7 @@
                 sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(newAdmin));
                 showToast(resData.message || 'Staff account created successfully via API!', 'success');
                 setTimeout(() => {
-                  window.location.href = 'admin-dashboard.html';
+                  window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
                 }, 800);
                 return;
               } else if (resData.message) {
@@ -567,7 +571,7 @@
           showToast('Staff account successfully registered! Loading console...', 'success');
 
           setTimeout(() => {
-            window.location.href = 'admin-dashboard.html';
+            window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
           }, 900);
         }, 500);
       });
@@ -601,7 +605,7 @@
           submitBtn.innerText = 'Send Staff Reset Instructions';
           showToast(`Recovery instructions dispatched to ${email}!`, 'success');
           setTimeout(() => {
-            window.location.href = 'admin-index.html';
+            window.location.href = `${PUBLIC_BASE}admin/admin-index.html`;
           }, 2000);
         }, 600);
       });
@@ -720,7 +724,7 @@
           showToast('Account registered successfully! Welcome to the Library Portal.', 'success');
 
           setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
           }, 1000);
         }, 500);
       });
@@ -759,7 +763,7 @@
           if (matchedUser) {
             showToast(`Password reset link sent to ${email}! Check your inbox.`, 'success');
             setTimeout(() => {
-              window.location.href = 'index.html';
+              window.location.href = `${PUBLIC_BASE}index.html`;
             }, 2500);
           } else {
             showToast('No matching student account found with those details.', 'error');

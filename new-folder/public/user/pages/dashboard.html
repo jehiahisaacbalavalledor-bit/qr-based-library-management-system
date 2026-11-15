@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Library Management System - Cavite State University Imus Campus</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/dashboard.css">
-  <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/images/logo.svg">
 </head>
 <body class="dashboard-body">
 
@@ -47,7 +47,7 @@
         </li>
 
         <li>
-          <a href="books-qr.html" title="Manage Masters Data & Book QR Catalog">
+          <a href="../../admin/pages/books/books-qr.html" title="Manage Masters Data & Book QR Catalog">
             <span class="menu-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
@@ -74,7 +74,7 @@
         </li>
 
         <li>
-          <a href="books-qr.html" title="Manage Books & Print QR Stickers">
+          <a href="../../admin/pages/books/books-qr.html" title="Manage Books & Print QR Stickers">
             <span class="menu-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -99,7 +99,7 @@
         </li>
 
         <li>
-          <a href="scanner.html" title="Circulation QR Scanner">
+          <a href="../../admin/pages/transactions/scanner.html" title="Circulation QR Scanner">
             <span class="menu-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00a65a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
@@ -307,7 +307,7 @@
              ================================================================ -->
         <section class="reference-action-grid">
           <!-- Card 1: Book Catalog -->
-          <a href="books-qr.html" class="ref-card card-theme-purple" id="cardCatalog" style="text-decoration: none;">
+          <a href="../../admin/pages/books/books-qr.html" class="ref-card card-theme-purple" id="cardCatalog" style="text-decoration: none;">
             <div>
               <div class="ref-card-icon bg-grad-purple">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -444,9 +444,20 @@
                 </svg>
                 Borrow a Book (Generate QR Borrow Slip)
               </h2>
-              <p style="font-size: 13px; color: var(--text-secondary); margin-top: -6px; margin-bottom: 16px;">
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: -6px; margin-bottom: 12px;">
                 Choose loan type and select a book. The system enforces a <strong>maximum limit of 2 books</strong> per student.
               </p>
+
+              <!-- Student Active Quota & Fine Status Banner -->
+              <div id="studentQuotaBanner" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 12.5px;">
+                <div>
+                  <strong style="color: #166534;">Active Borrow Quota:</strong>
+                  <span id="studentActiveCountLabel" style="font-weight: 700; color: #0f172a;">0 / 2 Books</span>
+                </div>
+                <div id="studentFineStatusLabel" style="font-weight: 600; color: #15803d;">
+                  ✓ No Unpaid Fines
+                </div>
+              </div>
 
               <!-- Client Loan Type Selector (1-Day, 2-Days, 3-Days, Overnight) -->
               <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">
@@ -613,7 +624,7 @@
 
         <!-- Action Buttons -->
         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px; padding: 0 16px 16px 16px;">
-          <a href="scanner.html" id="openScannerWithPassBtn" class="btn-submit" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <a href="../../admin/pages/transactions/scanner.html" id="openScannerWithPassBtn" class="btn-submit" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
               <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
@@ -636,7 +647,8 @@
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="js/qrcode.min.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="../../assets/vendor/qrcode/qrcode.min.js"></script>
+  <script src="../../assets/js/circulation-engine.js"></script>
+  <script src="../../admin/js/dashboard.js"></script>
 </body>
 </html>
