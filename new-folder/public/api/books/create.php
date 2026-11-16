@@ -73,11 +73,22 @@ try {
         $isRoomUseOnly
     ]);
 
+    $newBookId = (int) $pdo->lastInsertId();
+    try {
+        $copyIns = $pdo->prepare("INSERT IGNORE INTO book_copies (book_id, copy_number, copy_barcode, condition_status) VALUES (?, ?, ?, ?)");
+        $copyStatus = $isRoomUseOnly ? 'room_use' : 'available';
+        for ($c = 1; $c <= $copies; $c++) {
+            $copyIns->execute([$newBookId, $c, "{$bookCode}-C{$c}", $copyStatus]);
+        }
+    } catch (Exception $copyErr) {
+        // Non-blocking if book_copies hasn't been initialized yet
+    }
+
     echo json_encode([
         'status'  => 'success',
         'message' => "Book '{$title}' added to MySQL catalog.",
         'data'    => [
-            'id'               => $pdo->lastInsertId(),
+            'id'               => $newBookId,
             'book_code'        => $bookCode,
             'accession_number' => $accessionNo,
             'call_number'      => $callNo,

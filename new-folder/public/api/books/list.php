@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../backend/config/db.php';
 try {
     $stmt = $pdo->query("
         SELECT id, book_code, accession_number, call_number, classification_number,
-               isbn, title, author, category, publisher, publication_year,
+               isbn, title, author, category, publisher, publication_year, marc_tags,
                total_copies, available_copies, is_room_use_only, status
         FROM books
         ORDER BY id ASC

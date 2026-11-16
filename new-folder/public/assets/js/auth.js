@@ -246,6 +246,7 @@
           try {
             const apiRes = await fetch(`${PUBLIC_BASE}api/auth/login.php`, {
               method: 'POST',
+              credentials: 'same-origin',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 studentNumber: rawStudentNo,
@@ -257,11 +258,14 @@
               const resData = await apiRes.json();
               if (resData.status === 'success') {
                 const loggedInUser = {
+                  id: resData.data.id,
                   studentNumber: resData.data.studentNumber || studentNo,
                   fullName: resData.data.fullName || `Student ${studentNo}`,
                   email: resData.data.email || `${studentNo}@cvsu.edu.ph`,
-                  course: resData.data.course || 'BS in Information Technology',
-                  campus: 'Imus Campus'
+                  mobile: resData.data.mobile || '',
+                  course: resData.data.course || 'BS Information Technology',
+                  yearLevel: resData.data.yearLevel || '1st Year',
+                  campus: resData.data.campus || 'Imus Campus'
                 };
                 sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(loggedInUser));
                 showToast('API Login verified! Redirecting...', 'success');
@@ -485,8 +489,8 @@
           return;
         }
 
-        if (password.length < 6) {
-          showToast('Password must be at least 6 characters.', 'error');
+        if (password.length < 8) {
+          showToast('Password must be at least 8 characters.', 'error');
           passInput.focus();
           return;
         }
@@ -494,6 +498,13 @@
         if (password !== confirmPassword) {
           showToast('Passwords do not match.', 'error');
           confirmPassInput.focus();
+          return;
+        }
+
+        const adminPrivacyCheckbox = document.getElementById('adminRegPrivacyConsent');
+        if (adminPrivacyCheckbox && !adminPrivacyCheckbox.checked) {
+          showToast('Please accept the Data Privacy & Accountability Notice to continue.', 'error');
+          adminPrivacyCheckbox.focus();
           return;
         }
 
@@ -729,6 +740,13 @@
         if (password !== confirmPassword) {
           showToast('Passwords do not match. Please re-enter.', 'error');
           confirmPassInput.focus();
+          return;
+        }
+
+        const regPrivacyCheckbox = document.getElementById('regPrivacyConsent');
+        if (regPrivacyCheckbox && !regPrivacyCheckbox.checked) {
+          showToast('Please agree to the Data Privacy Notice (RA 10173) before registering.', 'error');
+          regPrivacyCheckbox.focus();
           return;
         }
 

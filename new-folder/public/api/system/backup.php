@@ -15,6 +15,7 @@ $candidateTables = [
     'library_staff',
     'students',
     'books',
+    'book_copies',
     'borrow_transactions',
     'fines',
     'library_holidays',

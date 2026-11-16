@@ -527,8 +527,10 @@
               : `<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">UNPAID</span>`);
 
           const replacementNote = fine.replacementStatus === 'pending_replacement'
-            ? `<div style="font-size:11px;color:#b45309;font-weight:600;">⚠ Identical Replacement Required</div>`
-            : '';
+            ? `<div style="font-size:11px;color:#b45309;font-weight:600;">⚠ Identical Replacement Required (ISBN: ${fine.isbn || 'N/A'} | Acc: ${fine.accessionNumber || 'N/A'})</div>`
+            : (fine.replacementStatus === 'replaced'
+              ? `<div style="font-size:11px;color:#15803d;font-weight:600;">✓ Identical Replacement Verified &amp; Restored</div>`
+              : '');
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -539,10 +541,16 @@
             <td><strong style="color:#dc2626;">₱${Number(fine.fineAmount).toFixed(2)}</strong></td>
             <td>${badge}</td>
             <td>
-              ${fine.paymentStatus === 'unpaid' ? `
-                <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="paid" style="padding:3px 8px;font-size:11px;background:#00a65a;color:#fff;">Mark Paid</button>
-                <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="waived" style="padding:3px 8px;font-size:11px;">Waive</button>
-              ` : `<span style="font-size:11.5px;color:#64748b;">Settled</span>`}
+              <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                ${fine.paymentStatus === 'unpaid' ? `
+                  <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="paid" style="padding:3px 8px;font-size:11px;background:#00a65a;color:#fff;">Mark Paid</button>
+                  <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="waived" style="padding:3px 8px;font-size:11px;">Waive</button>
+                ` : ''}
+                ${fine.replacementStatus === 'pending_replacement' ? `
+                  <button type="button" class="btn-cam btn-settle-fine" data-id="${fine.id}" data-action="replaced" style="padding:3px 8px;font-size:11px;background:#d97706;color:#fff;">Mark Replaced</button>
+                ` : ''}
+                ${fine.paymentStatus !== 'unpaid' && fine.replacementStatus !== 'pending_replacement' ? `<span style="font-size:11.5px;color:#64748b;">Settled</span>` : ''}
+              </div>
             </td>
           `;
           finesTbody.appendChild(tr);
@@ -554,7 +562,7 @@
             const action = this.getAttribute('data-action');
             if (await engine.settleFineRemote(fineId, action)) {
               renderSmartCirculationDesk();
-              showToast(`Fine marked as ${action.toUpperCase()}.`, 'success');
+              showToast(action === 'replaced' ? 'Identical book replacement recorded & inventory updated.' : `Fine marked as ${action.toUpperCase()}.`, 'success');
             }
           });
         });

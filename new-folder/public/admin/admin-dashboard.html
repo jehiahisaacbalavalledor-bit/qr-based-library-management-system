@@ -134,8 +134,8 @@
     /* Stats Overview Cards */
     .stats-overview-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+      gap: 14px;
     }
 
     .stat-card {
@@ -360,9 +360,358 @@
       gap: 10px;
     }
 
+    /* Collapsible Admin Sidebar Shell */
+    .admin-app-shell {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    .admin-sidebar {
+      width: 248px;
+      background: #0f172a;
+      color: #f8fafc;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 120;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1e293b;
+      transition: width 0.22s ease, transform 0.22s ease;
+      overflow: hidden;
+    }
+
+    .admin-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 14px 12px 14px;
+      border-bottom: 1px solid #1e293b;
+      min-height: 60px;
+      box-sizing: border-box;
+    }
+
+    .admin-sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .admin-sidebar-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #00875a, #10b981);
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .admin-sidebar-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .admin-sidebar-sub {
+      font-size: 10.5px;
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+
+    .btn-sidebar-toggle {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #e2e8f0;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .btn-sidebar-toggle:hover {
+      background: #00875a;
+      border-color: #00875a;
+      color: #ffffff;
+    }
+
+    .btn-topbar-toggle {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.18s ease;
+    }
+
+    .btn-topbar-toggle:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+
+    .admin-sidebar-menu {
+      list-style: none;
+      margin: 0;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .admin-sidebar-divider {
+      height: 1px;
+      background: #1e293b;
+      margin: 8px 6px;
+    }
+
+    .admin-nav-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 9px 11px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: background 0.16s ease, color 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .admin-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .admin-nav-btn.active {
+      background: #00875a;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .admin-nav-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .admin-sidebar-footer {
+      padding: 10px;
+      border-top: 1px solid #1e293b;
+    }
+
+    .admin-main-wrap {
+      flex: 1;
+      margin-left: 248px;
+      width: calc(100% - 248px);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      transition: margin-left 0.22s ease, width 0.22s ease;
+    }
+
+    body.admin-sidebar-collapsed .admin-sidebar {
+      width: 72px;
+    }
+
+    body.admin-sidebar-collapsed .admin-sidebar-title-wrap,
+    body.admin-sidebar-collapsed .admin-nav-label {
+      display: none;
+    }
+
+    body.admin-sidebar-collapsed .admin-sidebar-header {
+      justify-content: center;
+      padding: 14px 8px;
+    }
+
+    body.admin-sidebar-collapsed .admin-sidebar-brand {
+      display: none;
+    }
+
+    body.admin-sidebar-collapsed .admin-nav-btn {
+      justify-content: center;
+      padding: 10px;
+    }
+
+    body.admin-sidebar-collapsed .admin-main-wrap {
+      margin-left: 72px;
+      width: calc(100% - 72px);
+    }
+
+    .admin-sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 110;
+    }
+
+    .admin-sidebar-backdrop.active {
+      display: block;
+    }
+
+    /* Section Filtering via Sidebar Navigation */
+    .dashboard-container[data-admin-section="circulation"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="circulation"] #booksInventorySection,
+    .dashboard-container[data-admin-section="circulation"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="circulation"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="circulation"] #systemAdminSection,
+    .dashboard-container[data-admin-section="circulation"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="circulation"] #staffManagementSection,
+    .dashboard-container[data-admin-section="circulation"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="books"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="books"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="books"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="books"] #activeLoansSection,
+    .dashboard-container[data-admin-section="books"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="books"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="books"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="books"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="books"] #systemAdminSection,
+    .dashboard-container[data-admin-section="books"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="books"] #staffManagementSection,
+    .dashboard-container[data-admin-section="books"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="students"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="students"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="students"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="students"] #activeLoansSection,
+    .dashboard-container[data-admin-section="students"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="students"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="students"] #booksInventorySection,
+    .dashboard-container[data-admin-section="students"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="students"] #systemAdminSection,
+    .dashboard-container[data-admin-section="students"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="students"] #staffManagementSection,
+    .dashboard-container[data-admin-section="students"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="reservations"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="reservations"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="reservations"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="reservations"] #activeLoansSection,
+    .dashboard-container[data-admin-section="reservations"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="reservations"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="reservations"] #booksInventorySection,
+    .dashboard-container[data-admin-section="reservations"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="reservations"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="reservations"] #systemAdminSection,
+    .dashboard-container[data-admin-section="reservations"] #staffManagementSection,
+    .dashboard-container[data-admin-section="reservations"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="reports"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="reports"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="reports"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="reports"] #activeLoansSection,
+    .dashboard-container[data-admin-section="reports"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="reports"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="reports"] #booksInventorySection,
+    .dashboard-container[data-admin-section="reports"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="reports"] #systemAdminSection,
+    .dashboard-container[data-admin-section="reports"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="reports"] #staffManagementSection,
+    .dashboard-container[data-admin-section="reports"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="system"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="system"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="system"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="system"] #activeLoansSection,
+    .dashboard-container[data-admin-section="system"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="system"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="system"] #booksInventorySection,
+    .dashboard-container[data-admin-section="system"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="system"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="system"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="system"] #staffManagementSection,
+    .dashboard-container[data-admin-section="system"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="staff"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="staff"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="staff"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="staff"] #activeLoansSection,
+    .dashboard-container[data-admin-section="staff"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="staff"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="staff"] #booksInventorySection,
+    .dashboard-container[data-admin-section="staff"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="staff"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="staff"] #systemAdminSection,
+    .dashboard-container[data-admin-section="staff"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="staff"] #adminSecuritySection { display: none; }
+
+    .dashboard-container[data-admin-section="security"] .stats-overview-grid,
+    .dashboard-container[data-admin-section="security"] #adminDueTodayBanner,
+    .dashboard-container[data-admin-section="security"] #circulationDeskSection,
+    .dashboard-container[data-admin-section="security"] #activeLoansSection,
+    .dashboard-container[data-admin-section="security"] #recentTransactionsSection,
+    .dashboard-container[data-admin-section="security"] #finesReplacementSection,
+    .dashboard-container[data-admin-section="security"] #booksInventorySection,
+    .dashboard-container[data-admin-section="security"] #studentsManagementSection,
+    .dashboard-container[data-admin-section="security"] #reportsAndImportSection,
+    .dashboard-container[data-admin-section="security"] #systemAdminSection,
+    .dashboard-container[data-admin-section="security"] #reservationsQueueSection,
+    .dashboard-container[data-admin-section="security"] #staffManagementSection { display: none; }
+
     @media (max-width: 960px) {
       .stats-overview-grid { grid-template-columns: repeat(2, 1fr); }
       .kiosk-quick-panel { grid-template-columns: 1fr; }
+      .admin-sidebar {
+        transform: translateX(-100%);
+        width: 248px !important;
+      }
+      body.admin-sidebar-mobile-open .admin-sidebar {
+        transform: translateX(0);
+      }
+      body.admin-sidebar-collapsed .admin-sidebar-title-wrap,
+      body.admin-sidebar-collapsed .admin-nav-label {
+        display: initial;
+      }
+      body.admin-sidebar-collapsed .admin-sidebar-brand {
+        display: flex;
+      }
+      body.admin-sidebar-collapsed .admin-nav-btn {
+        justify-content: flex-start;
+      }
+      .admin-main-wrap,
+      body.admin-sidebar-collapsed .admin-main-wrap {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    @media print {
+      .admin-sidebar, .admin-sidebar-backdrop, .top-navbar { display: none !important; }
+      .admin-main-wrap { margin-left: 0 !important; width: 100% !important; }
     }
   </style>
 </head>
@@ -371,9 +720,122 @@
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Top Navigation Header -->
-  <nav class="top-navbar">
-    <div class="nav-brand">
+  <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
+
+  <div class="admin-app-shell">
+    <!-- Left Collapsible Sidebar Navigation -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="admin-sidebar-header">
+        <div class="admin-sidebar-brand">
+          <div class="admin-sidebar-logo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
+          <div class="admin-sidebar-title-wrap">
+            <div class="admin-sidebar-title">CvSU Admin</div>
+            <div class="admin-sidebar-sub">Library Console</div>
+          </div>
+        </div>
+        <button type="button" class="btn-sidebar-toggle" id="adminSidebarToggle" title="Collapse / Expand Sidebar" aria-label="Toggle Sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <ul class="admin-sidebar-menu" id="adminSidebarMenu">
+        <li>
+          <button type="button" class="admin-nav-btn active" data-admin-view="all" title="Overview (All Modules)">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg></span>
+            <span class="admin-nav-label">All Modules</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="circulation" title="Circulation Desk & Active Loans">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
+            <span class="admin-nav-label">Circulation &amp; Loans</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="books" title="Master Book Inventory">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></span>
+            <span class="admin-nav-label">Book Inventory</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="students" title="Registered Students & Clearance">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></span>
+            <span class="admin-nav-label">Students &amp; Clearance</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="reservations" title="Reservations Hold Queue">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></span>
+            <span class="admin-nav-label">Reservations Queue</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="reports" title="Reports & CSV Tools">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></span>
+            <span class="admin-nav-label">Reports &amp; CSV</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="system" title="Holidays, Audit Trail & Backup">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line></svg></span>
+            <span class="admin-nav-label">Holidays &amp; Backup</span>
+          </button>
+        </li>
+        <li id="sidebarStaffItem">
+          <button type="button" class="admin-nav-btn" data-admin-view="staff" title="Staff Management (Head Librarian)">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span>
+            <span class="admin-nav-label">Staff Management</span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="admin-nav-btn" data-admin-view="security" title="Account Security & Change Password">
+            <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+            <span class="admin-nav-label">Account Security</span>
+          </button>
+        </li>
+        <li class="admin-sidebar-divider"></li>
+        <li>
+          <a href="pages/transactions/scanner.html" class="admin-nav-btn" title="Open Circulation QR Scanner">
+            <span class="admin-nav-icon">📷</span>
+            <span class="admin-nav-label">QR Scanner</span>
+          </a>
+        </li>
+        <li>
+          <a href="pages/books/books-qr.html" class="admin-nav-btn" title="Open Book QR Generator">
+            <span class="admin-nav-icon">📚</span>
+            <span class="admin-nav-label">Book QR Labels</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="admin-sidebar-footer">
+        <button type="button" class="admin-nav-btn" id="sidebarAdminLogoutBtn" style="color: #fca5a5;" title="Sign Out">
+          <span class="admin-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span>
+          <span class="admin-nav-label">Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="admin-main-wrap">
+      <!-- Top Navigation Header -->
+      <nav class="top-navbar">
+        <div class="nav-brand">
+          <button type="button" class="btn-topbar-toggle" id="adminTopbarToggleBtn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 42" width="135" height="36" role="img" aria-label="Admin Portal Logo">
         <g transform="translate(4, 2)">
           <rect x="11.5" y="11.5" width="15" height="15" rx="2" transform="rotate(45 19 19)" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linejoin="round" />
@@ -423,50 +885,80 @@
   </nav>
 
   <!-- Main Container -->
-  <div class="dashboard-container">
+  <div class="dashboard-container" id="adminDashboardContainer" data-admin-section="all">
     
-    <!-- KPI Counters -->
+    <!-- KPI Counters (6 Core Library Metrics) -->
     <div class="stats-overview-grid">
       <div class="stat-card">
         <div class="stat-icon green">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
         </div>
         <div class="stat-content">
-          <div class="stat-val" id="adminTotalCatalog">8</div>
-          <div class="stat-label">Catalog Titles</div>
+          <div class="stat-val" id="adminTotalCatalog">0</div>
+          <div class="stat-label">Total Books / Titles</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green" style="background: #ecfdf5; color: #059669;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminAvailableBooks">0</div>
+          <div class="stat-label">Available Copies</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon blue">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
         </div>
         <div class="stat-content">
-          <div class="stat-val" id="adminActiveLoans">2</div>
-          <div class="stat-label">Circulating Loans</div>
+          <div class="stat-val" id="adminActiveLoans">0</div>
+          <div class="stat-label">Borrowed Books</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue" style="background: #eff6ff; color: #2563eb;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+        </div>
+        <div class="stat-content">
+          <div class="stat-val" id="adminTotalStudents">0</div>
+          <div class="stat-label">Registered Students</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon orange">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         </div>
         <div class="stat-content">
-          <div class="stat-val" id="adminOverdueCount">1</div>
+          <div class="stat-val" id="adminOverdueCount">0</div>
           <div class="stat-label">Overdue Books</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon purple">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>
         </div>
         <div class="stat-content">
-          <div class="stat-val" id="adminFinesCollected">₱30.00</div>
+          <div class="stat-val" id="adminFinesCollected">₱0.00</div>
           <div class="stat-label">Assessed Penalties</div>
         </div>
       </div>
     </div>
 
+    <!-- Due Today / Overdue & Offline Sync Alert Strip -->
+    <div id="adminDueTodayBanner" style="display: none; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 12px 18px; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 18px;">🔔</span>
+        <div>
+          <strong id="adminDueTodayTitle" style="font-size: 13.5px; color: #92400e;">Circulation Due Alert</strong>
+          <div id="adminDueTodayDesc" style="font-size: 12px; color: #b45309;">Check active loans requiring follow-up today.</div>
+        </div>
+      </div>
+      <button type="button" class="btn-tbl-sm" id="adminSyncOfflineBtn" style="display: none; background: #0f172a; color: #fff; border-color: #0f172a;">Sync Offline Queue (0)</button>
+    </div>
+
     <!-- Circulation Desk Action Center -->
-    <section class="admin-card">
+    <section class="admin-card" id="circulationDeskSection">
       <div class="admin-card-header">
         <h3>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00875a" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -497,7 +989,7 @@
     </section>
 
     <!-- Active Circulating Loans Management -->
-    <section class="admin-card">
+    <section class="admin-card" id="activeLoansSection">
       <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
         <h3>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -527,6 +1019,7 @@
                 <th>Book Title & Code</th>
                 <th>Borrow Date</th>
                 <th>Due Date</th>
+                <th>Librarian</th>
                 <th>Penalty Status</th>
                 <th>Librarian Action</th>
               </tr>
@@ -539,30 +1032,105 @@
       </div>
     </section>
 
-    <!-- Book Inventory Catalog -->
-    <section class="admin-card">
-      <div class="admin-card-header">
+    <!-- Recent Borrow & Return Transaction History -->
+    <section class="admin-card" id="recentTransactionsSection">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
         <h3>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          Master Book Inventory
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00875a" stroke-width="2.2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          Recent Borrow &amp; Return Transaction History
         </h3>
-        <button class="btn-green" id="openAddBookBtn" style="padding: 5px 12px; font-size: 12px;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Add New Book Title
-        </button>
+        <span style="font-size: 12px; color: #64748b;">Shows borrow date, due date, actual return date, book condition &amp; staff in charge</span>
       </div>
       <div class="admin-card-body">
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Code</th>
+                <th>Txn ID</th>
+                <th>Student</th>
+                <th>Book</th>
+                <th>Borrow Date</th>
+                <th>Expected Due</th>
+                <th>Actual Return</th>
+                <th>Condition &amp; Status</th>
+                <th>Staff In Charge</th>
+              </tr>
+            </thead>
+            <tbody id="recentTransactionsTbody">
+              <tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 16px;">Loading recent transactions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fines & Damaged/Lost Identical Book Replacement Ledger -->
+    <section class="admin-card" id="finesReplacementSection">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
+        <h3>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>
+          Overdue Fines &amp; Damaged/Lost Identical Book Replacement Ledger
+        </h3>
+        <span style="font-size: 12px; color: #64748b;">Verify identical title, author, ISBN &amp; accession copy before marking replaced</span>
+      </div>
+      <div class="admin-card-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Txn ID</th>
+                <th>Student</th>
+                <th>Book &amp; Identical Replacement Details</th>
+                <th>Chargeable Days</th>
+                <th>Fine</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminFinesTbody">
+              <tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 16px;">No unpaid fines or pending replacements.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Book Inventory Catalog -->
+    <section class="admin-card" id="booksInventorySection">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 10px;">
+        <h3>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          Master Book Inventory
+        </h3>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <input type="text" id="adminBookSearchInput" class="form-control" placeholder="Search code, title, author, ISBN, accession..." style="max-width: 240px; padding: 5px 10px; font-size: 12px;">
+          <select id="adminBookCategoryFilter" class="form-control" style="max-width: 155px; padding: 5px 8px; font-size: 12px; background: #fff;">
+            <option value="">All Categories</option>
+          </select>
+          <select id="adminBookAvailFilter" class="form-control" style="max-width: 145px; padding: 5px 8px; font-size: 12px; background: #fff;">
+            <option value="all">All Status</option>
+            <option value="available">Available Only</option>
+            <option value="unavailable">Out of Stock</option>
+            <option value="room_only">Room Use Only</option>
+          </select>
+          <button class="btn-green" id="openAddBookBtn" style="padding: 5px 12px; font-size: 12px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add New Book Title
+          </button>
+        </div>
+      </div>
+      <div class="admin-card-body">
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Code &amp; Accession</th>
                 <th>ISBN</th>
-                <th>Title & Author</th>
+                <th>Title &amp; Author</th>
                 <th>Publisher / Year</th>
                 <th>Category</th>
-                <th>Shelf Location</th>
-                <th>Available / Total</th>
+                <th>Call &amp; Class #</th>
+                <th>Availability</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -739,6 +1307,7 @@
                   <option value="RETURN_QR">RETURN_QR</option>
                   <option value="RENEW_LOAN">RENEW_LOAN</option>
                   <option value="SETTLE_FINE">SETTLE_FINE</option>
+                  <option value="REPLACEMENT_COMPLETE">REPLACEMENT_COMPLETE</option>
                   <option value="BOOK_RESERVE">BOOK_RESERVE</option>
                   <option value="RESERVATION_UPDATE">RESERVATION_UPDATE</option>
                   <option value="STAFF_UPDATE">STAFF_UPDATE</option>
@@ -859,7 +1428,9 @@
       </div>
     </section>
 
-  </div>
+      </div> <!-- /.dashboard-container -->
+    </div> <!-- /.admin-main-wrap -->
+  </div> <!-- /.admin-app-shell -->
 
   <!-- Modal: Add New Book -->
   <div class="modal-overlay" id="addBookModal">
@@ -876,8 +1447,18 @@
               <input type="text" id="newBookCode" class="form-control" required placeholder="e.g. BK-9050">
             </div>
             <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Accession Number</label>
+              <input type="text" id="newBookAccession" class="form-control" placeholder="e.g. ACC-2026-00901">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
               <label class="form-label" style="font-size: 12px;">ISBN</label>
               <input type="text" id="newBookIsbn" class="form-control" placeholder="e.g. 978-0132350884">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Classification Number (DDC/LCC)</label>
+              <input type="text" id="newBookClassification" class="form-control" placeholder="e.g. 005.1">
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 10px;">
@@ -918,9 +1499,13 @@
               <input type="number" id="newBookCopies" class="form-control" min="1" max="50" value="5" required>
             </div>
           </div>
-          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #b45309; font-weight: 600; cursor: pointer; margin-bottom: 10px;">
             <input type="checkbox" id="newBookRoomUse"> Special / Thesis Collection (Room Use Only)
           </label>
+          <div class="form-group" style="margin-bottom: 4px;">
+            <label class="form-label" style="font-size: 12px;">MARC21 Tags (Optional JSON — auto-generated if blank)</label>
+            <textarea id="newBookMarcTags" class="form-control" rows="2" style="font-family: monospace; font-size: 11.5px;" placeholder='{"020":"...","082":"005.1","100":"Author","245":"Title"}'></textarea>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-tbl-sm" id="cancelAddBookBtn">Cancel</button>
@@ -946,8 +1531,18 @@
               <input type="text" id="editBookCodeDisplay" class="form-control" disabled>
             </div>
             <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Accession Number</label>
+              <input type="text" id="editBookAccession" class="form-control">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group" style="margin-bottom: 10px;">
               <label class="form-label" style="font-size: 12px;">ISBN</label>
               <input type="text" id="editBookIsbn" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label" style="font-size: 12px;">Classification Number</label>
+              <input type="text" id="editBookClassification" class="form-control">
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 10px;">
@@ -995,6 +1590,34 @@
           <button type="submit" class="btn-green">Save Changes</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Per-Copy Barcode Tracking -->
+  <div class="modal-overlay" id="bookCopiesModal">
+    <div class="modal-dialog" style="max-width: 680px;">
+      <div class="modal-header">
+        <h4 style="margin: 0; font-size: 16px;" id="bookCopiesModalTitle">Physical Copy Tracking</h4>
+        <button class="modal-close-btn" id="closeBookCopiesBtn" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="bookCopiesMeta" style="font-size: 12.5px; color: #475569; margin-bottom: 12px;"></div>
+        <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Copy #</th>
+                <th>Copy Barcode</th>
+                <th>Status / Condition</th>
+                <th>Notes &amp; Save</th>
+              </tr>
+            </thead>
+            <tbody id="bookCopiesTbody">
+              <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px;">Loading copies...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1143,6 +1766,8 @@
         if (engine && engine.getCatalog().length > 0) {
           return engine.getCatalog().map(b => ({
             id: b.book_code,
+            accessionNumber: b.accession_number || 'N/A',
+            classificationNumber: b.classification_number || '005.1',
             isbn: b.isbn || 'N/A',
             title: b.title,
             author: b.author,
@@ -1176,6 +1801,7 @@
         const tomorrowStr = engine ? engine.toYmd(tmrDt) : '';
 
         let overdueCount = 0;
+        let dueTodayCount = 0;
         let dueSoonCount = 0;
         let totalFines = 0;
 
@@ -1185,7 +1811,10 @@
             if (calc.isOverdue) {
               overdueCount++;
               totalFines += calc.fineAmount;
-            } else if (l.dueDate === todayStr || l.dueDate === tomorrowStr) {
+            } else if (l.dueDate === todayStr) {
+              dueTodayCount++;
+              dueSoonCount++;
+            } else if (l.dueDate === tomorrowStr) {
               dueSoonCount++;
             }
           }
@@ -1211,10 +1840,52 @@
           totalFines += unpaidLedger.reduce((s, f) => s + Number(f.fineAmount || 0), 0);
         }
 
+        const srvStats = engine && typeof engine.getServerStats === 'function' ? engine.getServerStats() : null;
+        const totalAvailCopies = srvStats && typeof srvStats.available_books === 'number'
+          ? srvStats.available_books
+          : books.reduce((s, b) => s + Number(b.availableCopies || 0), 0);
+        const totalRegisteredStudents = srvStats && typeof srvStats.total_students === 'number'
+          ? srvStats.total_students
+          : (Array.isArray(cachedStudents) ? cachedStudents.length : 0);
+
         document.getElementById('adminTotalCatalog').textContent = books.length;
+        const availEl = document.getElementById('adminAvailableBooks');
+        if (availEl) availEl.textContent = totalAvailCopies;
         document.getElementById('adminActiveLoans').textContent = activeLoans.length;
+        const stuCntEl = document.getElementById('adminTotalStudents');
+        if (stuCntEl) stuCntEl.textContent = totalRegisteredStudents;
         document.getElementById('adminOverdueCount').textContent = overdueCount;
         document.getElementById('adminFinesCollected').textContent = `₱${totalFines.toFixed(2)}`;
+
+        // Due Today / Overdue & Offline Sync Alert Banner
+        const dueBanner = document.getElementById('adminDueTodayBanner');
+        const dueTitle = document.getElementById('adminDueTodayTitle');
+        const dueDesc = document.getElementById('adminDueTodayDesc');
+        const syncOffBtn = document.getElementById('adminSyncOfflineBtn');
+        const offlinePending = engine && typeof engine.getOfflineQueue === 'function' ? engine.getOfflineQueue().length : 0;
+
+        if (dueBanner) {
+          if (dueTodayCount > 0 || overdueCount > 0 || offlinePending > 0) {
+            dueBanner.style.display = 'flex';
+            const msgs = [];
+            if (overdueCount > 0) msgs.push(`${overdueCount} overdue book(s)`);
+            if (dueTodayCount > 0) msgs.push(`${dueTodayCount} book(s) due today (${todayStr})`);
+            if (dueTitle) dueTitle.textContent = msgs.length ? `Action Required: ${msgs.join(' · ')}` : 'Offline Circulation Queue Ready';
+            if (dueDesc) dueDesc.textContent = msgs.length
+              ? 'Follow up with borrowers below or export the Overdue Follow-Up CSV.'
+              : 'Queued offline transactions can be synced directly to MySQL.';
+            if (syncOffBtn) {
+              if (offlinePending > 0) {
+                syncOffBtn.style.display = 'inline-block';
+                syncOffBtn.textContent = `Sync Offline Queue (${offlinePending})`;
+              } else {
+                syncOffBtn.style.display = 'none';
+              }
+            }
+          } else {
+            dueBanner.style.display = 'none';
+          }
+        }
 
         // Populate book select
         const sel = document.getElementById('circBookSelect');
@@ -1222,6 +1893,16 @@
           const roomTag = b.isRoomUseOnly ? ' [Room Use Only]' : '';
           return `<option value="${escHtml(b.id)}" ${b.availableCopies <= 0 ? 'disabled' : ''}>${escHtml(b.id)} — ${escHtml(b.title)} (${Number(b.availableCopies)} available)${roomTag}</option>`;
         }).join('');
+
+        // Populate Category Filter options cleanly
+        const catFilterEl = document.getElementById('adminBookCategoryFilter');
+        if (catFilterEl) {
+          const prevCat = catFilterEl.value;
+          const uniqueCats = [...new Set(books.map(b => b.category).filter(Boolean))].sort();
+          catFilterEl.innerHTML = '<option value="">All Categories</option>' +
+            uniqueCats.map(c => `<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
+          catFilterEl.value = prevCat;
+        }
 
         // Filter and populate loans table
         const loanFilterMode = document.getElementById('loanMonitorFilter')?.value || 'all';
@@ -1234,7 +1915,7 @@
 
         const loansTbody = document.getElementById('adminLoansTbody');
         if (displayLoans.length === 0) {
-          loansTbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">No loans matching the selected filter.</td></tr>`;
+          loansTbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 20px;">No loans matching the selected filter.</td></tr>`;
         } else {
           loansTbody.innerHTML = displayLoans.map(t => {
             const calc = engine ? engine.calculateOverdueFine(t.dueDate, todayStr) : { isOverdue: false, overdueDays: 0, skippedDays: 0, fineAmount: 0 };
@@ -1256,9 +1937,18 @@
                 <td><strong>${escHtml(t.bookTitle)}</strong><div style="font-size: 11px; color: #64748b;">${escHtml(t.bookCode || '')}</div></td>
                 <td>${escHtml(t.borrowDate)}</td>
                 <td><strong>${escHtml(t.dueDate)}</strong></td>
+                <td style="font-size:12px;color:#475569;">${escHtml(t.librarianName || 'Library Staff')}</td>
                 <td>${badge}</td>
                 <td>
-                  <button class="btn-tbl-sm return-btn" data-ref="${escHtml(t.ref)}">Check-In Return</button>
+                  <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                    <select class="form-control admin-return-cond" data-ref="${escHtml(t.ref)}" style="padding:3px 6px;font-size:11.5px;width:auto;background:#fff;">
+                      <option value="good">Good</option>
+                      <option value="minor_wear">Minor Wear</option>
+                      <option value="damaged">Damaged</option>
+                      <option value="lost">Lost</option>
+                    </select>
+                    <button class="btn-tbl-sm return-btn" data-ref="${escHtml(t.ref)}">Check-In Return</button>
+                  </div>
                 </td>
               </tr>
             `;
@@ -1268,7 +1958,9 @@
             btn.addEventListener('click', async function() {
               const ref = this.getAttribute('data-ref');
               if (!engine) return;
-              const res = await engine.returnRemote(ref, todayStr, 'good');
+              const condSel = loansTbody.querySelector(`.admin-return-cond[data-ref="${ref}"]`);
+              const cond = condSel ? condSel.value : 'good';
+              const res = await engine.returnRemote(ref, todayStr, cond);
               if (res.ok) {
                 showToast(res.message, 'success');
                 render();
@@ -1279,25 +1971,154 @@
           });
         }
 
-        // Populate books table
+        // Populate Recent Transactions History
+        const recentTbody = document.getElementById('recentTransactionsTbody');
+        if (recentTbody) {
+          const recentTxns = engine && typeof engine.getRecentTransactions === 'function' ? engine.getRecentTransactions() : [];
+          if (recentTxns.length === 0) {
+            recentTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px;">No borrow/return history recorded yet.</td></tr>';
+          } else {
+            recentTbody.innerHTML = recentTxns.map(r => {
+              const st = String(r.return_status || 'borrowed');
+              const stColor = st === 'returned' ? '#16a34a' : (st === 'lost' || st === 'damaged' || st === 'overdue' ? '#dc2626' : '#0284c7');
+              const condLabel = String(r.book_condition || 'good').replace(/_/g, ' ').toUpperCase();
+              const staffText = r.return_librarian_name
+                ? `${r.librarian_name || 'Staff'} / Ret: ${r.return_librarian_name}`
+                : (r.librarian_name || 'Library Staff');
+              return `
+                <tr>
+                  <td><strong style="font-family:monospace;">${escHtml(r.transaction_code)}</strong></td>
+                  <td><span style="font-family:monospace;font-weight:700;">${escHtml(r.student_number)}</span><div style="font-size:11px;color:#64748b;">${escHtml(r.full_name)}</div></td>
+                  <td><strong>${escHtml(r.title)}</strong><div style="font-size:11px;color:#64748b;">${escHtml(r.book_code)}</div></td>
+                  <td>${escHtml(r.borrow_date)}</td>
+                  <td>${escHtml(r.due_date)}</td>
+                  <td>${r.actual_return_date ? escHtml(r.actual_return_date) : '<span style="color:#94a3b8;">Pending</span>'}</td>
+                  <td><span style="font-weight:700;font-size:11px;color:${stColor};text-transform:uppercase;">${escHtml(st)}</span><div style="font-size:10.5px;color:#64748b;">Cond: ${escHtml(condLabel)}</div></td>
+                  <td style="font-size:11.5px;color:#475569;">${escHtml(staffText)}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+
+        // Populate Fines & Damaged/Lost Identical Replacement Ledger
+        const finesAdminTbody = document.getElementById('adminFinesTbody');
+        if (finesAdminTbody) {
+          const allFines = engine ? engine.getFines() : [];
+          if (allFines.length === 0) {
+            finesAdminTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:16px;">No overdue fines or pending replacements.</td></tr>';
+          } else {
+            finesAdminTbody.innerHTML = allFines.map(f => {
+              const payBadge = f.paymentStatus === 'paid'
+                ? '<span class="badge-status" style="background:#dcfce7;color:#166534;">PAID</span>'
+                : (f.paymentStatus === 'waived'
+                  ? '<span class="badge-status" style="background:#e2e8f0;color:#475569;">WAIVED</span>'
+                  : '<span class="badge-status badge-overdue">UNPAID</span>');
+              const replHtml = f.replacementStatus === 'pending_replacement'
+                ? `<div style="margin-top:3px;font-size:11px;color:#b45309;font-weight:600;">⚠ Identical Replacement Required · ISBN: ${escHtml(f.isbn || 'N/A')} · Author: ${escHtml(f.author || 'N/A')} · Acc: ${escHtml(f.accessionNumber || 'N/A')}</div>`
+                : (f.replacementStatus === 'replaced'
+                  ? '<div style="margin-top:3px;font-size:11px;color:#15803d;font-weight:600;">✓ Identical Replacement Verified &amp; Restored</div>'
+                  : '');
+              return `
+                <tr>
+                  <td><code style="font-size:11.5px;">${escHtml(f.ref)}</code></td>
+                  <td><strong>${escHtml(f.studentName)}</strong><div style="font-size:11px;color:#64748b;">${escHtml(f.studentNo)}</div></td>
+                  <td><strong>${escHtml(f.bookTitle)}</strong>${replHtml}</td>
+                  <td>${Number(f.overdueDays || 0)} day(s)</td>
+                  <td><strong style="color:#dc2626;">₱${Number(f.fineAmount || 0).toFixed(2)}</strong></td>
+                  <td>${payBadge}</td>
+                  <td>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                      ${f.paymentStatus === 'unpaid' ? `
+                        <button type="button" class="btn-tbl-sm btn-admin-settle" data-id="${Number(f.id)}" data-action="paid" style="color:#16a34a;">Mark Paid</button>
+                        <button type="button" class="btn-tbl-sm btn-admin-settle" data-id="${Number(f.id)}" data-action="waived">Waive</button>
+                      ` : ''}
+                      ${f.replacementStatus === 'pending_replacement' ? `
+                        <button type="button" class="btn-tbl-sm btn-admin-settle" data-id="${Number(f.id)}" data-action="replaced" style="color:#b45309;border-color:#fcd34d;background:#fffbeb;">Mark Replaced</button>
+                      ` : ''}
+                      ${f.paymentStatus !== 'unpaid' && f.replacementStatus !== 'pending_replacement' ? '<span style="font-size:11px;color:#64748b;">Settled</span>' : ''}
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+
+            finesAdminTbody.querySelectorAll('.btn-admin-settle').forEach(btn => {
+              btn.addEventListener('click', async function() {
+                if (!engine) return;
+                const fineId = this.getAttribute('data-id');
+                const action = this.getAttribute('data-action');
+                const ok = await engine.settleFineRemote(fineId, action);
+                if (ok) {
+                  showToast(action === 'replaced' ? 'Identical book replacement verified and restored.' : `Fine marked as ${action.toUpperCase()}.`, 'success');
+                  render();
+                } else {
+                  showToast('Failed to update fine/replacement record.', 'error');
+                }
+              });
+            });
+          }
+        }
+
+        // Filter & populate books table
+        const bookSearchQ = (document.getElementById('adminBookSearchInput')?.value || '').trim().toLowerCase();
+        const bookCatQ = document.getElementById('adminBookCategoryFilter')?.value || '';
+        const bookAvailQ = document.getElementById('adminBookAvailFilter')?.value || 'all';
+        const filteredBooks = books.filter(b => {
+          if (bookCatQ && b.category !== bookCatQ) return false;
+          if (bookAvailQ === 'available' && (b.availableCopies <= 0 || b.isRoomUseOnly)) return false;
+          if (bookAvailQ === 'unavailable' && b.availableCopies > 0) return false;
+          if (bookAvailQ === 'room_only' && !b.isRoomUseOnly) return false;
+          if (!bookSearchQ) return true;
+          return [b.id, b.accessionNumber, b.isbn, b.title, b.author, b.category, b.location, b.classificationNumber]
+            .some(val => String(val || '').toLowerCase().includes(bookSearchQ));
+        });
+
         const booksTbody = document.getElementById('adminBooksTbody');
-        booksTbody.innerHTML = books.map(b => `
-          <tr>
-            <td><strong style="font-family: monospace;">${escHtml(b.id)}</strong></td>
-            <td>${escHtml(b.isbn)}</td>
-            <td><strong>${escHtml(b.title)}</strong><div style="font-size: 11.5px; color: #64748b;">${escHtml(b.author)}</div></td>
-            <td>${b.publisher ? escHtml(b.publisher) : '<span style="color:#94a3b8;">N/A</span>'}<div style="font-size: 11.5px; color: #64748b;">${escHtml(b.publicationYear || '—')}</div></td>
-            <td><span class="badge-status badge-borrowed">${escHtml(b.category)}</span></td>
-            <td>${escHtml(b.location)} ${b.isRoomUseOnly ? '<span style="color:#b45309;font-size:11px;font-weight:700;">(Room Use)</span>' : ''}</td>
-            <td><strong style="color: ${b.availableCopies > 0 ? '#16a34a' : '#dc2626'};">${Number(b.availableCopies)}</strong> / ${Number(b.totalCopies)}</td>
-            <td>
-              <div style="display:flex;gap:6px;">
-                <button type="button" class="btn-tbl-sm btn-edit-book" data-code="${escHtml(b.id)}">Edit</button>
-                <button type="button" class="btn-tbl-sm btn-delete-book" data-code="${escHtml(b.id)}" style="color:#dc2626;border-color:#fecaca;">Delete</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
+        if (filteredBooks.length === 0) {
+          booksTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px;">No books match the current search/filter.</td></tr>';
+        } else {
+          booksTbody.innerHTML = filteredBooks.map(b => {
+            const availStatusBadge = b.isRoomUseOnly
+              ? '<span style="display:inline-block;font-size:10.5px;font-weight:700;color:#b45309;background:#fef3c7;padding:2px 6px;border-radius:6px;">Room Use</span>'
+              : (b.availableCopies > 0
+                ? '<span style="display:inline-block;font-size:10.5px;font-weight:700;color:#166534;background:#dcfce7;padding:2px 6px;border-radius:6px;">Available</span>'
+                : '<span style="display:inline-block;font-size:10.5px;font-weight:700;color:#dc2626;background:#fee2e2;padding:2px 6px;border-radius:6px;">Checked Out</span>');
+            return `
+              <tr>
+                <td>
+                  <strong style="font-family: monospace;">${escHtml(b.id)}</strong>
+                  <div style="font-size:11px;color:#64748b;font-family:monospace;">${escHtml(b.accessionNumber)}</div>
+                </td>
+                <td>${escHtml(b.isbn)}</td>
+                <td><strong>${escHtml(b.title)}</strong><div style="font-size: 11.5px; color: #64748b;">${escHtml(b.author)}</div></td>
+                <td>${b.publisher ? escHtml(b.publisher) : '<span style="color:#94a3b8;">N/A</span>'}<div style="font-size: 11.5px; color: #64748b;">${escHtml(b.publicationYear || '—')}</div></td>
+                <td><span class="badge-status badge-borrowed">${escHtml(b.category)}</span></td>
+                <td>
+                  <div>${escHtml(b.location)}</div>
+                  <div style="font-size:11px;color:#64748b;">Class: ${escHtml(b.classificationNumber)}</div>
+                </td>
+                <td>
+                  <div><strong style="color: ${b.availableCopies > 0 ? '#16a34a' : '#dc2626'};">${Number(b.availableCopies)}</strong> / ${Number(b.totalCopies)}</div>
+                  ${availStatusBadge}
+                </td>
+                <td>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                    <button type="button" class="btn-tbl-sm btn-view-copies" data-code="${escHtml(b.id)}" style="color:#0284c7;border-color:#bae6fd;">Copies</button>
+                    <button type="button" class="btn-tbl-sm btn-edit-book" data-code="${escHtml(b.id)}">Edit</button>
+                    <button type="button" class="btn-tbl-sm btn-delete-book" data-code="${escHtml(b.id)}" style="color:#dc2626;border-color:#fecaca;">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        booksTbody.querySelectorAll('.btn-view-copies').forEach(btn => {
+          btn.addEventListener('click', function() {
+            openBookCopiesModal(this.getAttribute('data-code'));
+          });
+        });
 
         booksTbody.querySelectorAll('.btn-edit-book').forEach(btn => {
           btn.addEventListener('click', function() {
@@ -1305,6 +2126,10 @@
             if (!b) return;
             document.getElementById('editBookCode').value = b.id;
             document.getElementById('editBookCodeDisplay').value = b.id;
+            const accEl = document.getElementById('editBookAccession');
+            if (accEl) accEl.value = b.accessionNumber === 'N/A' ? '' : (b.accessionNumber || '');
+            const clsEl = document.getElementById('editBookClassification');
+            if (clsEl) clsEl.value = b.classificationNumber || '005.1';
             document.getElementById('editBookIsbn').value = b.isbn === 'N/A' ? '' : b.isbn;
             document.getElementById('editBookTitle').value = b.title;
             document.getElementById('editBookAuthor').value = b.author;
@@ -1316,6 +2141,7 @@
             document.getElementById('editBookRoomUse').checked = Boolean(b.isRoomUseOnly);
             const defaultMarc = JSON.stringify({
               '020': b.isbn,
+              '082': b.classificationNumber || '005.1',
               '100': b.author,
               '245': b.title,
               '264': [b.publisher || 'N/A', b.publicationYear || ''].filter(Boolean).join(', '),
@@ -1382,6 +2208,8 @@
       document.getElementById('addBookForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const code = document.getElementById('newBookCode').value.trim();
+        const accessionNumber = document.getElementById('newBookAccession')?.value.trim() || '';
+        const classification = document.getElementById('newBookClassification')?.value.trim() || '005.1';
         const isbn = document.getElementById('newBookIsbn').value.trim();
         const title = document.getElementById('newBookTitle').value.trim();
         const author = document.getElementById('newBookAuthor').value.trim();
@@ -1391,11 +2219,14 @@
         const callNo = document.getElementById('newBookCallNo').value.trim();
         const copies = parseInt(document.getElementById('newBookCopies').value, 10) || 1;
         const isRoomUseOnly = document.getElementById('newBookRoomUse').checked;
+        const marcTags = document.getElementById('newBookMarcTags')?.value.trim() || '';
 
         const engine = window.CvsuCirculationEngine;
         if (engine && engine.API_BASE) {
           const res = await engine.addBookRemote({
             bookCode: code,
+            accessionNumber,
+            classification,
             isbn: isbn,
             title: title,
             author: author,
@@ -1404,7 +2235,8 @@
             category: cat,
             callNumber: callNo || undefined,
             totalCopies: copies,
-            isRoomUseOnly: isRoomUseOnly
+            isRoomUseOnly: isRoomUseOnly,
+            marcTags: marcTags || undefined
           });
           if (res.ok) {
             modal.classList.remove('active');
@@ -1421,6 +2253,8 @@
         const books = getBooksList();
         books.push({
           id: code,
+          accessionNumber: accessionNumber || ('ACC-' + new Date().getFullYear() + '-' + Math.floor(10000 + Math.random() * 90000)),
+          classificationNumber: classification,
           isbn: isbn || ('978-' + Math.floor(1000000000 + Math.random() * 9000000000)),
           title: title,
           author: author,
@@ -1430,7 +2264,8 @@
           location: callNo || ('Section ' + cat.substring(0, 3).toUpperCase()),
           totalCopies: copies,
           availableCopies: copies,
-          isRoomUseOnly: isRoomUseOnly
+          isRoomUseOnly: isRoomUseOnly,
+          marcTags: marcTags
         });
 
         localStorage.setItem(STORAGE_BOOKS_KEY, JSON.stringify(books));
@@ -1450,6 +2285,8 @@
         if (!engine || !engine.API_BASE) return;
         const res = await engine.updateBookRemote({
           bookCode: document.getElementById('editBookCode').value.trim(),
+          accessionNumber: document.getElementById('editBookAccession')?.value.trim() || undefined,
+          classification: document.getElementById('editBookClassification')?.value.trim() || undefined,
           isbn: document.getElementById('editBookIsbn').value.trim(),
           title: document.getElementById('editBookTitle').value.trim(),
           author: document.getElementById('editBookAuthor').value.trim(),
@@ -1467,6 +2304,74 @@
           render();
         }
       });
+
+      // Per-Copy Barcode Tracking modal helper
+      async function openBookCopiesModal(bookCode) {
+        const copiesModal = document.getElementById('bookCopiesModal');
+        const titleEl = document.getElementById('bookCopiesModalTitle');
+        const metaEl = document.getElementById('bookCopiesMeta');
+        const tbody = document.getElementById('bookCopiesTbody');
+        if (!copiesModal || !tbody) return;
+        const engine = window.CvsuCirculationEngine;
+        if (titleEl) titleEl.textContent = `Copy-Level Tracking — ${bookCode}`;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px;">Loading copies...</td></tr>';
+        copiesModal.classList.add('active');
+        if (!engine || !engine.API_BASE) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px;">Copy barcode tracking requires active MySQL server.</td></tr>';
+          return;
+        }
+        try {
+          const res = await fetch(`${engine.API_BASE}books/copies.php?book_code=${encodeURIComponent(bookCode)}`, { credentials: 'same-origin' });
+          const json = await res.json();
+          if (!res.ok || json.status !== 'success') {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#dc2626;padding:14px;">${escHtml(json.message || 'Could not load copies.')}</td></tr>`;
+            return;
+          }
+          if (metaEl && json.book) {
+            metaEl.innerHTML = `<strong>${escHtml(json.book.title)}</strong> · Accession: <code>${escHtml(json.book.accession_number)}</code> · Total Copies: <strong>${Number(json.book.total_copies)}</strong>`;
+          }
+          const statuses = ['available', 'borrowed', 'damaged', 'lost', 'room_use'];
+          tbody.innerHTML = (json.data || []).map(cp => `
+            <tr data-copy-id="${Number(cp.id)}">
+              <td><strong>Copy #${Number(cp.copy_number)}</strong></td>
+              <td><code style="font-weight:700;color:#00875a;">${escHtml(cp.copy_barcode)}</code></td>
+              <td>
+                <select class="form-control copy-status-sel" style="padding:4px 6px;font-size:12px;background:#fff;">
+                  ${statuses.map(st => `<option value="${st}" ${cp.condition_status === st ? 'selected' : ''}>${st}</option>`).join('')}
+                </select>
+              </td>
+              <td>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <input type="text" class="form-control copy-notes-inp" value="${escHtml(cp.notes || '')}" placeholder="Copy note..." style="padding:4px 8px;font-size:12px;">
+                  <button type="button" class="btn-tbl-sm btn-save-copy" data-id="${Number(cp.id)}">Save</button>
+                </div>
+              </td>
+            </tr>
+          `).join('');
+          tbody.querySelectorAll('.btn-save-copy').forEach(btn => {
+            btn.addEventListener('click', async function() {
+              const row = this.closest('tr');
+              const id = Number(this.getAttribute('data-id'));
+              const condition_status = row.querySelector('.copy-status-sel').value;
+              const notes = row.querySelector('.copy-notes-inp').value.trim();
+              const updRes = await fetch(`${engine.API_BASE}books/copies.php`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, condition_status, notes })
+              });
+              const updJson = await updRes.json();
+              showToast(updJson.message || 'Copy updated.', updRes.ok && updJson.status === 'success' ? 'success' : 'error');
+            });
+          });
+        } catch (err) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#dc2626;padding:14px;">Network error loading copies.</td></tr>';
+        }
+      }
+      const closeBookCopiesBtn = document.getElementById('closeBookCopiesBtn');
+      if (closeBookCopiesBtn) {
+        closeBookCopiesBtn.addEventListener('click', () => document.getElementById('bookCopiesModal').classList.remove('active'));
+      }
 
       // Registered Students Management
       let cachedStudents = [];
@@ -1740,8 +2645,8 @@
         showToast(`Exported ${overdueLoans.length} overdue follow-up record(s).`, 'success');
       });
 
-      // Logout handler
-      document.getElementById('adminLogoutBtn').addEventListener('click', function() {
+      // Logout handler (topbar & sidebar)
+      const handleAdminLogout = function() {
         showToast('Admin session terminated.', 'info');
         if (window.CvsuRouteGuard) {
           window.CvsuRouteGuard.logout('admin-index.html', SESSION_ADMIN_KEY);
@@ -1749,7 +2654,59 @@
         }
         sessionStorage.removeItem(SESSION_ADMIN_KEY);
         setTimeout(() => window.location.href = 'admin-index.html', 500);
-      });
+      };
+      document.getElementById('adminLogoutBtn').addEventListener('click', handleAdminLogout);
+      const sidebarLogoutBtn = document.getElementById('sidebarAdminLogoutBtn');
+      if (sidebarLogoutBtn) sidebarLogoutBtn.addEventListener('click', handleAdminLogout);
+
+      // Collapsible Sidebar & Module View Switcher
+      function initAdminSidebar() {
+        const SIDEBAR_PREF_KEY = 'cvsu_admin_sidebar_collapsed';
+        const sidebarToggleBtn = document.getElementById('adminSidebarToggle');
+        const topbarToggleBtn = document.getElementById('adminTopbarToggleBtn');
+        const backdrop = document.getElementById('adminSidebarBackdrop');
+        const container = document.getElementById('adminDashboardContainer');
+
+        try {
+          if (localStorage.getItem(SIDEBAR_PREF_KEY) === 'true' && window.innerWidth > 960) {
+            document.body.classList.add('admin-sidebar-collapsed');
+          }
+        } catch (e) {}
+
+        const toggleSidebar = () => {
+          if (window.innerWidth <= 960) {
+            const isOpen = document.body.classList.toggle('admin-sidebar-mobile-open');
+            if (backdrop) backdrop.classList.toggle('active', isOpen);
+          } else {
+            const collapsed = document.body.classList.toggle('admin-sidebar-collapsed');
+            try { localStorage.setItem(SIDEBAR_PREF_KEY, collapsed ? 'true' : 'false'); } catch (e) {}
+          }
+        };
+
+        if (sidebarToggleBtn) sidebarToggleBtn.addEventListener('click', toggleSidebar);
+        if (topbarToggleBtn) topbarToggleBtn.addEventListener('click', toggleSidebar);
+        if (backdrop) {
+          backdrop.addEventListener('click', () => {
+            document.body.classList.remove('admin-sidebar-mobile-open');
+            backdrop.classList.remove('active');
+          });
+        }
+
+        document.querySelectorAll('.admin-nav-btn[data-admin-view]').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const view = this.getAttribute('data-admin-view') || 'all';
+            document.querySelectorAll('.admin-nav-btn[data-admin-view]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            if (container) container.setAttribute('data-admin-section', view);
+            if (window.innerWidth <= 960) {
+              document.body.classList.remove('admin-sidebar-mobile-open');
+              if (backdrop) backdrop.classList.remove('active');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+      }
+      initAdminSidebar();
 
       document.addEventListener('DOMContentLoaded', async function() {
         let isHeadLibrarian = true;
@@ -1762,14 +2719,43 @@
             const bJson = document.getElementById('backupJsonBtn');
             const bRestore = document.getElementById('restoreBackupBtn');
             const staffSec = document.getElementById('staffManagementSection');
+            const staffNav = document.getElementById('sidebarStaffItem');
             if (bSql) bSql.style.display = 'none';
             if (bJson) bJson.style.display = 'none';
             if (bRestore) bRestore.style.display = 'none';
             if (staffSec) staffSec.style.display = 'none';
+            if (staffNav) staffNav.style.display = 'none';
           }
         }
         render();
+        const bookSearchInp = document.getElementById('adminBookSearchInput');
+        const bookCatSel = document.getElementById('adminBookCategoryFilter');
+        const bookAvailSel = document.getElementById('adminBookAvailFilter');
+        if (bookSearchInp) bookSearchInp.addEventListener('input', render);
+        if (bookCatSel) bookCatSel.addEventListener('change', render);
+        if (bookAvailSel) bookAvailSel.addEventListener('change', render);
+
+        const syncOffBtn = document.getElementById('adminSyncOfflineBtn');
+        const runOfflineSync = async () => {
+          const eng = window.CvsuCirculationEngine;
+          if (!eng || typeof eng.flushOfflineQueue !== 'function') return;
+          const res = await eng.flushOfflineQueue();
+          if (res && res.synced > 0) {
+            showToast(`Synced ${res.synced} queued offline transaction(s) to MySQL.`, 'success');
+            render();
+          }
+        };
+        if (syncOffBtn) syncOffBtn.addEventListener('click', runOfflineSync);
+        window.addEventListener('online', runOfflineSync);
+
         if (window.CvsuCirculationEngine) {
+          if (typeof window.CvsuCirculationEngine.flushOfflineQueue === 'function') {
+            window.CvsuCirculationEngine.flushOfflineQueue().then(syncRes => {
+              if (syncRes && syncRes.synced > 0) {
+                showToast(`Auto-synced ${syncRes.synced} offline transaction(s).`, 'success');
+              }
+            });
+          }
           window.CvsuCirculationEngine.syncFromServer().then(res => {
             if (res && res.ok) render();
           });
@@ -2365,15 +3351,15 @@
 
         document.getElementById('exportBooksCsvBtn').addEventListener('click', function() {
           const books = getBooksList();
-          const cols = ['book_code', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'available_copies', 'room_use'];
-          const rows = books.map(b => [b.id, b.isbn, b.title, b.author, b.publisher, b.publicationYear, b.category, b.location, b.totalCopies, b.availableCopies, b.isRoomUseOnly ? 'YES' : 'NO']);
+          const cols = ['book_code', 'accession_number', 'classification_number', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'available_copies', 'room_use'];
+          const rows = books.map(b => [b.id, b.accessionNumber, b.classificationNumber, b.isbn, b.title, b.author, b.publisher, b.publicationYear, b.category, b.location, b.totalCopies, b.availableCopies, b.isRoomUseOnly ? 'YES' : 'NO']);
           downloadCsv(`cvsu_books_export_${todayIso}.csv`, cols, rows);
           showToast('Exported books catalog CSV.', 'success');
         });
 
         document.getElementById('downloadBookTplBtn').addEventListener('click', function() {
-          const cols = ['book_code', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'room_use'];
-          const sample = [['BK-SAMPLE-01', '978-0132350884', 'Clean Architecture', 'Robert C. Martin', 'Pearson', '2017', 'CS & IT', 'QA 76.76 .M37', '3', 'NO']];
+          const cols = ['book_code', 'accession_number', 'classification_number', 'isbn', 'title', 'author', 'publisher', 'publication_year', 'category', 'call_number', 'total_copies', 'room_use'];
+          const sample = [['BK-SAMPLE-01', 'ACC-2026-00999', '005.1', '978-0132350884', 'Clean Architecture', 'Robert C. Martin', 'Pearson', '2017', 'CS & IT', 'QA 76.76 .M37', '3', 'NO']];
           downloadCsv('cvsu_books_import_template.csv', cols, sample);
         });
 

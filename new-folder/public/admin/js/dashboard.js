@@ -62,11 +62,12 @@
   }
 
   document.addEventListener('DOMContentLoaded', async function () {
+    let serverSession = null;
     if (window.CvsuRouteGuard) {
-      const sessionData = await window.CvsuRouteGuard.requireSession('student', '../../index.html', SESSION_USER_KEY);
-      if (!sessionData) return;
+      serverSession = await window.CvsuRouteGuard.requireSession('student', '../../index.html', SESSION_USER_KEY);
+      if (!serverSession) return;
     }
-    // 1. Initialize Active User Data
+    // 1. Initialize Active User Data & hydrate latest DB fields from serverSession
     let currentUser = getActiveUser();
     if (!currentUser) {
       currentUser = {
@@ -79,8 +80,20 @@
         yearLevel: '3rd Year',
         campus: 'Imus Campus'
       };
-      sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
     }
+    if (serverSession && !serverSession.offline) {
+      currentUser = {
+        ...currentUser,
+        studentNumber: serverSession.student_number || currentUser.studentNumber,
+        fullName: serverSession.full_name || currentUser.fullName,
+        email: serverSession.email || currentUser.email,
+        mobile: serverSession.mobile || currentUser.mobile || '',
+        course: serverSession.course || currentUser.course,
+        yearLevel: serverSession.yearLevel || currentUser.yearLevel,
+        campus: serverSession.campus || currentUser.campus
+      };
+    }
+    sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(currentUser));
 
     const studentNameDisplay = currentUser.fullName || `Student ${currentUser.studentNumber}`;
 
@@ -792,7 +805,15 @@
       });
     }
 
-    // 10b. Account Change Password Form
+    // 10b. Account Change Password Form & Visibility Toggles
+    document.querySelectorAll('[data-toggle-pwd]').forEach(toggleBtn => {
+      toggleBtn.addEventListener('click', function () {
+        const targetEl = document.getElementById(this.getAttribute('data-toggle-pwd'));
+        if (!targetEl) return;
+        targetEl.type = targetEl.type === 'password' ? 'text' : 'password';
+      });
+    });
+
     const changePasswordForm = document.getElementById('changePasswordForm');
     if (changePasswordForm) {
       changePasswordForm.addEventListener('submit', async function (e) {
@@ -814,7 +835,7 @@
           return;
         }
         const btn = document.getElementById('changePasswordBtn');
-        const origText = btn ? btn.textContent : '';
+        const origHtml = btn ? btn.innerHTML : '';
         if (btn) {
           btn.disabled = true;
           btn.textContent = 'Updating...';
@@ -838,7 +859,7 @@
         } finally {
           if (btn) {
             btn.disabled = false;
-            btn.textContent = origText;
+            btn.innerHTML = origHtml;
           }
         }
       });

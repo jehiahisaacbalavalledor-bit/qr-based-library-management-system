@@ -45,6 +45,7 @@ try {
     }
 
     $category       = trim($input['category'] ?? $existing['category']);
+    $accessionNo    = trim($input['accessionNumber'] ?? $input['accession_number'] ?? $existing['accession_number']);
     $isbn           = trim($input['isbn'] ?? $existing['isbn'] ?? '');
     $callNo         = trim($input['callNumber'] ?? $input['call_number'] ?? $existing['call_number']);
     $classification = trim($input['classification'] ?? $input['classification_number'] ?? $existing['classification_number']);
@@ -81,6 +82,7 @@ try {
         SET title = ?,
             author = ?,
             category = ?,
+            accession_number = ?,
             isbn = ?,
             call_number = ?,
             classification_number = ?,
@@ -96,6 +98,7 @@ try {
         $title,
         $author,
         $category,
+        $accessionNo !== '' ? $accessionNo : $existing['accession_number'],
         $isbn !== '' ? $isbn : null,
         $callNo,
         $classification,
@@ -114,6 +117,7 @@ try {
         'data'    => [
             'id'                    => $existing['id'],
             'book_code'             => $existing['book_code'],
+            'accession_number'      => $accessionNo !== '' ? $accessionNo : $existing['accession_number'],
             'title'                 => $title,
             'author'                => $author,
             'category'              => $category,
@@ -122,6 +126,7 @@ try {
             'classification_number' => $classification,
             'publisher'             => $publisher !== '' ? $publisher : null,
             'publication_year'      => $pubYear,
+            'marc_tags'             => $marcJson,
             'total_copies'          => $newTotal,
             'available_copies'      => $newAvailable,
             'is_room_use_only'      => $isRoomUseOnly

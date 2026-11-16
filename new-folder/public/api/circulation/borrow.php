@@ -28,7 +28,7 @@ $bookCode      = trim($input['bookCode'] ?? $input['book_code'] ?? '');
 $bookTitle     = trim($input['bookTitle'] ?? $input['book'] ?? '');
 $loanType      = trim($input['loanType'] ?? $input['loan_type'] ?? '3_days');
 $customRef     = trim($input['transactionCode'] ?? $input['ref'] ?? '');
-$librarianId   = isset($input['librarian_id']) ? (int) $input['librarian_id'] : 1;
+$librarianId   = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : (isset($input['librarian_id']) ? (int) $input['librarian_id'] : 1);
 
 if (empty($studentNumber)) {
     http_response_code(400);

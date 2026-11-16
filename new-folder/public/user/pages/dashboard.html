@@ -407,24 +407,62 @@
               </div>
 
               <!-- In-App Account Password Update -->
-              <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-subtle);" id="studentPasswordBox">
-                <h3 style="margin: 0 0 10px 0; font-size: 14.5px; color: var(--text-primary);">Account Security &amp; Change Password</h3>
-                <form id="changePasswordForm" style="display: grid; gap: 10px;">
-                  <div>
-                    <label for="curPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Current Password</label>
-                    <input type="password" id="curPasswordInput" class="borrow-input" required placeholder="Enter current password">
+              <div class="security-card-box" id="studentPasswordBox">
+                <div class="security-card-header">
+                  <div style="width: 34px; height: 34px; border-radius: 8px; background: var(--cvsu-green-bg); color: var(--cvsu-green-light); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
                   </div>
                   <div>
-                    <label for="newPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">New Password (min 8 chars)</label>
-                    <input type="password" id="newPasswordInput" class="borrow-input" required minlength="8" placeholder="Minimum 8 characters">
+                    <h3 class="security-card-title">Account Security &amp; Change Password</h3>
+                    <p class="security-card-subtitle">Keep your library account secure with a strong password (minimum 8 characters).</p>
                   </div>
-                  <div>
-                    <label for="confirmPasswordInput" style="display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Confirm New Password</label>
-                    <input type="password" id="confirmPasswordInput" class="borrow-input" required minlength="8" placeholder="Re-enter new password">
+                </div>
+
+                <form id="changePasswordForm">
+                  <div class="security-fields-grid">
+                    <div>
+                      <label for="curPasswordInput" class="security-field-label">Current Password</label>
+                      <div class="security-input-wrap">
+                        <input type="password" id="curPasswordInput" class="security-input" required placeholder="Enter current password" autocomplete="current-password">
+                        <button type="button" class="security-eye-btn" data-toggle-pwd="curPasswordInput" aria-label="Toggle current password visibility" title="Show/hide password">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label for="newPasswordInput" class="security-field-label">New Password</label>
+                      <div class="security-input-wrap">
+                        <input type="password" id="newPasswordInput" class="security-input" required minlength="8" placeholder="Minimum 8 characters" autocomplete="new-password">
+                        <button type="button" class="security-eye-btn" data-toggle-pwd="newPasswordInput" aria-label="Toggle new password visibility" title="Show/hide password">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label for="confirmPasswordInput" class="security-field-label">Confirm New Password</label>
+                      <div class="security-input-wrap">
+                        <input type="password" id="confirmPasswordInput" class="security-input" required minlength="8" placeholder="Re-enter new password" autocomplete="new-password">
+                        <button type="button" class="security-eye-btn" data-toggle-pwd="confirmPasswordInput" aria-label="Toggle confirm password visibility" title="Show/hide password">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <button type="submit" class="btn-borrow-generate" id="changePasswordBtn" style="margin-top: 4px;">
-                    Update Password
-                  </button>
+
+                  <div class="security-actions-row">
+                    <span class="security-hint-text">Must be at least 8 characters and differ from your current password.</span>
+                    <button type="submit" class="btn-generate-qr" id="changePasswordBtn" style="padding: 10px 20px; font-size: 13.5px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Update Password
+                    </button>
+                  </div>
                 </form>
               </div>
             </section>

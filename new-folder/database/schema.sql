@@ -10,6 +10,7 @@ USE `cvsu_library_db`;
 
 -- Drop tables in proper foreign key dependency order if resetting
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `book_copies`;
 DROP TABLE IF EXISTS `book_reservations`;
 DROP TABLE IF EXISTS `circulation_audit_logs`;
 DROP TABLE IF EXISTS `activity_logs`;
@@ -187,6 +188,17 @@ CREATE TABLE IF NOT EXISTS `book_reservations` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `fk_res_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_res_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS `book_copies` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `book_id` INT NOT NULL,
+  `copy_number` INT NOT NULL,
+  `copy_barcode` VARCHAR(64) NOT NULL UNIQUE,
+  `condition_status` ENUM('available', 'borrowed', 'damaged', 'lost', 'room_use') NOT NULL DEFAULT 'available',
+  `notes` VARCHAR(255) DEFAULT NULL,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_copy_book` FOREIGN KEY (`book_id`) REFERENCES `books`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- =========================================================================

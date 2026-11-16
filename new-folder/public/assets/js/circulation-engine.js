@@ -16,6 +16,9 @@
   const FINES_STORAGE_KEY = 'cvsu_circulation_fines_ledger';
   const HOLIDAYS_STORAGE_KEY = 'cvsu_library_holidays';
   const CATALOG_STORAGE_KEY = 'cvsu_library_mysql_catalog';
+  const RECENT_TXNS_STORAGE_KEY = 'cvsu_circulation_recent_txns';
+  const SERVER_STATS_STORAGE_KEY = 'cvsu_circulation_server_stats';
+  const OFFLINE_QUEUE_STORAGE_KEY = 'cvsu_circulation_offline_queue';
 
   const SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
   const API_BASE = (SCRIPT_SRC && window.location.protocol.startsWith('http'))
@@ -453,7 +456,8 @@
             dueTime: l.loan_type === 'overnight' ? '10:00 AM' : '17:00',
             status: l.return_status,
             bookCondition: l.book_condition || 'good',
-            actualReturnDate: l.actual_return_date
+            actualReturnDate: l.actual_return_date,
+            librarianName: l.librarian_name || 'Library Staff'
           }));
           saveLoans(mappedLoans);
         }
@@ -464,6 +468,11 @@
             studentNo: f.student_number,
             studentName: f.full_name,
             bookTitle: f.book_title,
+            bookCode: f.book_code || '',
+            accessionNumber: f.accession_number || '',
+            callNo: f.call_number || '',
+            isbn: f.isbn || '',
+            author: f.author || '',
             overdueDays: Number(f.overdue_days || 0),
             skippedDays: 0,
             fineAmount: Number(f.fine_amount || 0),
@@ -474,6 +483,12 @@
           }));
           saveFines(mappedFines);
         }
+        if (Array.isArray(d.recent_transactions)) {
+          localStorage.setItem(RECENT_TXNS_STORAGE_KEY, JSON.stringify(d.recent_transactions));
+        }
+        if (d.stats) {
+          localStorage.setItem(SERVER_STATS_STORAGE_KEY, JSON.stringify(d.stats));
+        }
       }
 
       if (booksJson.status === 'success' && Array.isArray(booksJson.data)) {
@@ -483,11 +498,75 @@
       return {
         ok: true,
         stats: statusJson.data ? statusJson.data.stats : null,
+        recentTransactions: statusJson.data ? (statusJson.data.recent_transactions || []) : [],
         catalog: booksJson.data || []
       };
     } catch (err) {
       return { ok: false, error: err.message };
     }
+  }
+
+  function getRecentTransactions() {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_TXNS_STORAGE_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function getServerStats() {
+    try {
+      return JSON.parse(localStorage.getItem(SERVER_STATS_STORAGE_KEY)) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function getOfflineQueue() {
+    try {
+      return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_STORAGE_KEY)) || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function enqueueOfflineAction(actionType, data) {
+    const q = getOfflineQueue();
+    q.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, actionType, data, queuedAt: new Date().toISOString() });
+    localStorage.setItem(OFFLINE_QUEUE_STORAGE_KEY, JSON.stringify(q));
+  }
+
+  async function flushOfflineQueue() {
+    if (!API_BASE) return { synced: 0, remaining: getOfflineQueue().length };
+    const q = getOfflineQueue();
+    if (q.length === 0) return { synced: 0, remaining: 0 };
+
+    const remaining = [];
+    let synced = 0;
+    for (const item of q) {
+      const endpoint = item.actionType === 'borrow'
+        ? 'circulation/borrow.php'
+        : (item.actionType === 'renew' ? 'circulation/renew.php' : 'circulation/return.php');
+      try {
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item.data)
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok || (res.status >= 400 && res.status < 500 && json.status === 'error')) {
+          synced++;
+        } else {
+          remaining.push(item);
+        }
+      } catch (err) {
+        remaining.push(item);
+      }
+    }
+    localStorage.setItem(OFFLINE_QUEUE_STORAGE_KEY, JSON.stringify(remaining));
+    if (synced > 0) await syncFromServer();
+    return { synced, remaining: remaining.length };
   }
 
   async function borrowRemote(payload) {
@@ -512,7 +591,18 @@
       }
       return { ok: false, code: json.code, message: json.message };
     } catch (err) {
-      return checkoutBook(payload);
+      const localRes = checkoutBook(payload);
+      if (localRes && localRes.ok) {
+        enqueueOfflineAction('borrow', {
+          studentNumber: payload.studentNo,
+          bookCode: payload.bookCode,
+          bookTitle: payload.bookTitle,
+          loanType: payload.loanType || '3_days',
+          transactionCode: localRes.loan ? localRes.loan.ref : payload.ref
+        });
+        localRes.message = `${localRes.message} (Saved offline — queued for sync)`;
+      }
+      return localRes;
     }
   }
 
@@ -570,7 +660,12 @@
       }
       return { ok: false, message: json.message || 'Renewal failed.' };
     } catch (err) {
-      return renewBook(transactionCode, extensionType, today);
+      const localRes = renewBook(transactionCode, extensionType, today);
+      if (localRes && localRes.ok) {
+        enqueueOfflineAction('renew', { transactionCode, extensionType, today });
+        localRes.message = `${localRes.message} (Saved offline — queued for sync)`;
+      }
+      return localRes;
     }
   }
 
@@ -595,7 +690,12 @@
       }
       return { ok: false, message: json.message };
     } catch (err) {
-      return returnBook(transactionCode, returnDate, bookCondition);
+      const localRes = returnBook(transactionCode, returnDate, bookCondition);
+      if (localRes && localRes.ok) {
+        enqueueOfflineAction('return', { transactionCode, returnDate, bookCondition });
+        localRes.message = `${localRes.message} (Saved offline — queued for sync)`;
+      }
+      return localRes;
     }
   }
 
@@ -722,6 +822,10 @@
     getLoans,
     getFines,
     getCatalog,
+    getRecentTransactions,
+    getServerStats,
+    getOfflineQueue,
+    flushOfflineQueue,
     computeDueDate,
     calculateOverdueFine,
     getActiveLoansForStudent,

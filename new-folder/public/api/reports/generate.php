@@ -32,13 +32,15 @@ try {
         case 'daily_borrowing':
             $title = 'Daily Borrowing Report';
             $subtitle = "Date: {$date}";
-            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Code', 'Book Title', 'Loan Type', 'Borrow Date', 'Due Date', 'Status'];
+            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Code', 'Book Title', 'Loan Type', 'Borrow Date', 'Due Date', 'Librarian In Charge', 'Status'];
             $stmt = $pdo->prepare("
                 SELECT bt.transaction_code, s.student_number, s.full_name, b.book_code, b.title,
-                       bt.loan_type, bt.borrow_date, bt.due_date, bt.return_status
+                       bt.loan_type, bt.borrow_date, bt.due_date, bt.return_status,
+                       COALESCE(a1.full_name, 'Library Staff') AS librarian_name
                 FROM borrow_transactions bt
                 JOIN students s ON bt.student_id = s.id
                 JOIN books b ON bt.book_id = b.id
+                LEFT JOIN admins a1 ON bt.librarian_id = a1.id
                 WHERE bt.borrow_date = ?
                 ORDER BY bt.id DESC
             ");
@@ -47,7 +49,7 @@ try {
                 $rows[] = [
                     $r['transaction_code'], $r['student_number'], $r['full_name'],
                     $r['book_code'], $r['title'], $r['loan_type'],
-                    $r['borrow_date'], $r['due_date'], strtoupper($r['return_status'])
+                    $r['borrow_date'], $r['due_date'], $r['librarian_name'], strtoupper($r['return_status'])
                 ];
             }
             break;
@@ -55,13 +57,16 @@ try {
         case 'daily_return':
             $title = 'Daily Return Report';
             $subtitle = "Return Date: {$date}";
-            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Title', 'Borrow Date', 'Due Date', 'Actual Return', 'Condition', 'Status'];
+            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Title', 'Borrow Date', 'Due Date', 'Actual Return', 'Condition', 'Receiving Staff', 'Status'];
             $stmt = $pdo->prepare("
                 SELECT bt.transaction_code, s.student_number, s.full_name, b.title,
-                       bt.borrow_date, bt.due_date, bt.actual_return_date, bt.book_condition, bt.return_status
+                       bt.borrow_date, bt.due_date, bt.actual_return_date, bt.book_condition, bt.return_status,
+                       COALESCE(a2.full_name, COALESCE(a1.full_name, 'Library Staff')) AS return_librarian
                 FROM borrow_transactions bt
                 JOIN students s ON bt.student_id = s.id
                 JOIN books b ON bt.book_id = b.id
+                LEFT JOIN admins a1 ON bt.librarian_id = a1.id
+                LEFT JOIN admins a2 ON bt.return_librarian_id = a2.id
                 WHERE bt.actual_return_date = ?
                 ORDER BY bt.id DESC
             ");
@@ -70,7 +75,7 @@ try {
                 $rows[] = [
                     $r['transaction_code'], $r['student_number'], $r['full_name'],
                     $r['title'], $r['borrow_date'], $r['due_date'],
-                    $r['actual_return_date'], strtoupper($r['book_condition']), strtoupper($r['return_status'])
+                    $r['actual_return_date'], strtoupper($r['book_condition']), $r['return_librarian'], strtoupper($r['return_status'])
                 ];
             }
             break;
@@ -78,13 +83,15 @@ try {
         case 'monthly_transactions':
             $title = 'Monthly Transaction Report';
             $subtitle = "Month: {$month}";
-            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Title', 'Borrow Date', 'Due Date', 'Return Date', 'Renewals', 'Status'];
+            $columns = ['Transaction Code', 'Student No.', 'Student Name', 'Book Title', 'Borrow Date', 'Due Date', 'Return Date', 'Librarian In Charge', 'Renewals', 'Status'];
             $stmt = $pdo->prepare("
                 SELECT bt.transaction_code, s.student_number, s.full_name, b.title,
-                       bt.borrow_date, bt.due_date, bt.actual_return_date, bt.renewal_count, bt.return_status
+                       bt.borrow_date, bt.due_date, bt.actual_return_date, bt.renewal_count, bt.return_status,
+                       COALESCE(a1.full_name, 'Library Staff') AS librarian_name
                 FROM borrow_transactions bt
                 JOIN students s ON bt.student_id = s.id
                 JOIN books b ON bt.book_id = b.id
+                LEFT JOIN admins a1 ON bt.librarian_id = a1.id
                 WHERE DATE_FORMAT(bt.borrow_date, '%Y-%m') = ?
                 ORDER BY bt.borrow_date DESC, bt.id DESC
             ");
@@ -93,7 +100,7 @@ try {
                 $rows[] = [
                     $r['transaction_code'], $r['student_number'], $r['full_name'],
                     $r['title'], $r['borrow_date'], $r['due_date'],
-                    $r['actual_return_date'] ?: '—', (int) ($r['renewal_count'] ?? 0), strtoupper($r['return_status'])
+                    $r['actual_return_date'] ?: '—', $r['librarian_name'], (int) ($r['renewal_count'] ?? 0), strtoupper($r['return_status'])
                 ];
             }
             break;
@@ -124,11 +131,12 @@ try {
         case 'book_inventory':
             $title = 'Book Inventory Report';
             $subtitle = "Generated on: " . date('Y-m-d H:i');
-            $columns = ['Book Code', 'ISBN', 'Title', 'Author', 'Publisher', 'Year', 'Category', 'Call No.', 'Available', 'Total', 'Room Use'];
+            $columns = ['Book Code', 'Accession No.', 'Classification', 'ISBN', 'Title', 'Author', 'Publisher', 'Year', 'Category', 'Call No.', 'Available', 'Total', 'Room Use'];
             $stmt = $pdo->query("SELECT * FROM books ORDER BY id ASC");
             foreach ($stmt->fetchAll() as $r) {
                 $rows[] = [
-                    $r['book_code'], $r['isbn'] ?: 'N/A', $r['title'], $r['author'],
+                    $r['book_code'], $r['accession_number'] ?: 'N/A', $r['classification_number'] ?: '—',
+                    $r['isbn'] ?: 'N/A', $r['title'], $r['author'],
                     $r['publisher'] ?: 'N/A', $r['publication_year'] ?: '—',
                     $r['category'], $r['call_number'],
                     (int) $r['available_copies'], (int) $r['total_copies'],

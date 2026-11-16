@@ -23,7 +23,7 @@ $transactionCode = trim($input['transactionCode'] ?? $input['transaction_code'] 
 $returnDateStr   = trim($input['returnDate'] ?? $input['return_date'] ?? date('Y-m-d'));
 $bookCondition   = trim($input['bookCondition'] ?? $input['book_condition'] ?? 'good');
 $waiveFine       = !empty($input['waiveFine']);
-$librarianId     = isset($input['librarian_id']) ? (int) $input['librarian_id'] : 1;
+$librarianId     = !empty($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : (isset($input['librarian_id']) ? (int) $input['librarian_id'] : 1);
 
 if (empty($transactionCode)) {
     http_response_code(400);

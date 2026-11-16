@@ -121,10 +121,11 @@ try {
         'library_holidays',
         'activity_logs',
         'circulation_audit_logs',
-        'book_reservations'
+        'book_reservations',
+        'book_copies'
     ];
     $missing = array_diff($expectedTables, $tables);
-    assertTrue(count($missing) === 0, 'schema.sql creates all 10 tables cleanly', 'Missing: ' . implode(', ', $missing));
+    assertTrue(count($missing) === 0, 'schema.sql creates all 11 tables cleanly', 'Missing: ' . implode(', ', $missing));
 
     $adminCount = (int) $rootPdo->query("SELECT COUNT(*) FROM `{$tempDb}`.`admins`")->fetchColumn();
     $stuCount = (int) $rootPdo->query("SELECT COUNT(*) FROM `{$tempDb}`.`students`")->fetchColumn();
@@ -242,7 +243,23 @@ if ($baseUrl !== '') {
         'studentNumber' => '202410001',
         'password'      => 'Password123!'
     ], $stuCookies);
-    assertTrue($stuLogin['status'] === 200 && ($stuLogin['json']['status'] ?? '') === 'success', 'Valid student login succeeds');
+    assertTrue(
+        $stuLogin['status'] === 200
+        && ($stuLogin['json']['status'] ?? '') === 'success'
+        && ($stuLogin['json']['data']['mobile'] ?? '') !== ''
+        && ($stuLogin['json']['data']['yearLevel'] ?? '') !== '',
+        'Valid student login returns mobile and yearLevel',
+        $stuLogin['raw']
+    );
+
+    $stuSess = httpCall('GET', "{$baseUrl}/api/auth/session.php", null, $stuCookies);
+    assertTrue(
+        $stuSess['status'] === 200
+        && ($stuSess['json']['data']['mobile'] ?? '') !== ''
+        && ($stuSess['json']['data']['yearLevel'] ?? '') !== '',
+        'Student session.php hydrates mobile and yearLevel from DB',
+        $stuSess['raw']
+    );
 
     $stuBorrowBlock = httpCall('POST', "{$baseUrl}/api/circulation/borrow.php", [], $stuCookies);
     assertTrue(in_array($stuBorrowBlock['status'], [401, 403], true), 'Student cannot call staff borrow endpoint (RBAC)');
@@ -296,11 +313,41 @@ if ($baseUrl !== '') {
     $ret = httpCall('POST', "{$baseUrl}/api/circulation/return.php", [
         'transactionCode' => $smokeRef,
         'returnDate'      => date('Y-m-d'),
-        'bookCondition'   => 'good'
+        'bookCondition'   => 'damaged'
     ], $admCookies);
-    assertTrue($ret['status'] === 200 && ($ret['json']['status'] ?? '') === 'success', 'Admin return API closes loan cleanly', $ret['raw']);
+    assertTrue($ret['status'] === 200 && ($ret['json']['status'] ?? '') === 'success', 'Admin return API closes loan cleanly (with damaged condition)', $ret['raw']);
 
-    // Cleanup synthetic smoke transaction & audit entries
+    $statusResp = httpCall('GET', "{$baseUrl}/api/circulation/status.php", null, $admCookies);
+    $statsData = $statusResp['json']['data']['stats'] ?? [];
+    $recentTxns = $statusResp['json']['data']['recent_transactions'] ?? [];
+    assertTrue(
+        isset($statsData['total_students'], $statsData['available_books']) && count($recentTxns) > 0,
+        'status.php returns total_students, available_books, and recent_transactions'
+    );
+
+    $fineId = (int) ($ret['json']['data']['fine_id'] ?? 0);
+    if ($fineId > 0) {
+        $rep = httpCall('POST', "{$baseUrl}/api/circulation/settle_fine.php", [
+            'fineId' => $fineId,
+            'action' => 'replaced'
+        ], $admCookies);
+        assertTrue($rep['status'] === 200 && ($rep['json']['status'] ?? '') === 'success', 'settle_fine.php records identical book replacement cleanly', $rep['raw']);
+    }
+
+    $copiesResp = httpCall('GET', "{$baseUrl}/api/books/copies.php?book_code=BK-CVSU-001", null, $admCookies);
+    assertTrue(
+        $copiesResp['status'] === 200 && count($copiesResp['json']['data'] ?? []) >= 1,
+        'books/copies.php returns per-copy barcode tracking rows',
+        $copiesResp['raw']
+    );
+
+    $invReport = httpCall('GET', "{$baseUrl}/api/reports/generate.php?type=book_inventory", null, $admCookies);
+    assertTrue(
+        $invReport['status'] === 200 && in_array('Accession No.', $invReport['json']['columns'] ?? [], true),
+        'book_inventory report includes Accession No. and Classification'
+    );
+
+    // Cleanup synthetic smoke transaction, fines & audit entries
     $pdo->prepare("DELETE FROM borrow_transactions WHERE transaction_code = ?")->execute([$smokeRef]);
     $pdo->prepare("DELETE FROM circulation_audit_logs WHERE details LIKE ?")->execute(["%{$smokeRef}%"]);
 

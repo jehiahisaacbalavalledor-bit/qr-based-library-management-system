@@ -71,7 +71,10 @@ try {
                 'studentNumber' => $student['student_number'],
                 'fullName' => $student['full_name'],
                 'email' => $student['email'],
-                'course' => $student['course']
+                'mobile' => $student['mobile_number'] ?? '',
+                'course' => $student['course'] ?? 'BS Information Technology',
+                'yearLevel' => $student['year_level'] ?? '1st Year',
+                'campus' => $student['campus'] ?? 'Imus Campus'
             ]
         ]);
     } else {
