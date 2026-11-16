@@ -620,6 +620,23 @@
               Call Number: <strong id="resCallNo">QA 76.6 .C67</strong> | 
               Loan Due Date: <strong id="resDueDate">Nov 21, 2026</strong> (<span id="resLoanDurationLabel">3 Days</span>)
             </p>
+            <div id="resBookPickerWrap" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #86efac;">
+              <div style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 8px;">
+                <div>
+                  <label for="resBookSelect" style="display:block;font-size:11px;font-weight:700;color:#166534;margin-bottom:3px;">Assign Book to Issue</label>
+                  <select id="resBookSelect" style="width:100%;padding:6px 8px;border:1px solid #86efac;border-radius:6px;font-size:12px;background:#fff;color:#0f172a;"></select>
+                </div>
+                <div>
+                  <label for="resLoanTypeSelect" style="display:block;font-size:11px;font-weight:700;color:#166534;margin-bottom:3px;">Loan Duration</label>
+                  <select id="resLoanTypeSelect" style="width:100%;padding:6px 8px;border:1px solid #86efac;border-radius:6px;font-size:12px;background:#fff;color:#0f172a;">
+                    <option value="3_days">3 Days</option>
+                    <option value="2_days">2 Days</option>
+                    <option value="1_day">1 Day</option>
+                    <option value="overnight">Overnight (10 AM)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Action Buttons -->
@@ -761,6 +778,7 @@
 
   <script src="../../../assets/js/route-guard.js"></script>
   <script src="../../../assets/js/circulation-engine.js"></script>
+  <script src="../../../assets/vendor/qrcode/jsQR.js"></script>
   <script src="../../js/scanner.js"></script>
 </body>
 </html>

@@ -15,6 +15,70 @@
   let scanAnimationId = null;
   let lastScannedPayload = null;
   let currentDecodedData = null;
+  let cachedStudentsMap = new Map();
+
+  function runJsQrOnCanvasRegion(source, sx, sy, sw, sh, targetW, targetH) {
+    if (typeof window.jsQR !== 'function') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+    const imgData = ctx.getImageData(0, 0, targetW, targetH);
+    const direct = window.jsQR(imgData.data, targetW, targetH, { inversionAttempts: 'attemptBoth' });
+    if (direct && direct.data) return direct.data;
+
+    // High-contrast luminance binarization for colored QR codes (e.g. CvSU green #00875a)
+    const binarized = new Uint8ClampedArray(imgData.data);
+    for (let i = 0; i < binarized.length; i += 4) {
+      const a = binarized[i + 3];
+      const lum = a < 128 ? 255 : (0.299 * binarized[i] + 0.587 * binarized[i + 1] + 0.114 * binarized[i + 2]);
+      const bw = lum < 175 ? 0 : 255;
+      binarized[i] = bw;
+      binarized[i + 1] = bw;
+      binarized[i + 2] = bw;
+      binarized[i + 3] = 255;
+    }
+    const bwMatch = window.jsQR(binarized, targetW, targetH, { inversionAttempts: 'dontInvert' });
+    return bwMatch && bwMatch.data ? bwMatch.data : null;
+  }
+
+  function decodeQrFromImageElement(img) {
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+
+    const attempts = [
+      { sx: 0, sy: 0, sw: w, sh: h, tw: w, th: h },
+      { sx: 0, sy: 0, sw: w, sh: h, tw: Math.max(420, Math.min(900, Math.round(w * 1.5))), th: Math.max(420, Math.min(900, Math.round(h * 1.5))) }
+    ];
+    if (w > 900 || h > 900) {
+      const scale = 800 / Math.max(w, h);
+      attempts.push({ sx: 0, sy: 0, sw: w, sh: h, tw: Math.round(w * scale), th: Math.round(h * scale) });
+    }
+    // Center crop pass for full card screenshots containing headers/footers around the QR
+    const cw = Math.round(w * 0.78);
+    const ch = Math.round(h * 0.72);
+    const cx = Math.round((w - cw) / 2);
+    const cy = Math.round((h - ch) / 2);
+    attempts.push({ sx: cx, sy: cy, sw: cw, sh: ch, tw: Math.max(480, cw), th: Math.max(480, ch) });
+    // Lower-middle crop for Student QR ID card screenshots (header above QR)
+    const ly = Math.round(h * 0.22);
+    const lh = Math.round(h * 0.68);
+    attempts.push({ sx: Math.round(w * 0.08), sy: ly, sw: Math.round(w * 0.84), sh: lh, tw: 560, th: Math.round(560 * (lh / (w * 0.84))) });
+
+    for (const a of attempts) {
+      const decoded = runJsQrOnCanvasRegion(img, a.sx, a.sy, a.sw, a.sh, Math.max(64, a.tw), Math.max(64, a.th));
+      if (decoded) return decoded;
+    }
+    return null;
+  }
 
   // Synthesize realistic Library Barcode Scanner Beep
   function playScannerBeep() {
@@ -114,17 +178,21 @@
       }
 
       if (obj.studentNo || obj.studentNumber) {
+        const sNo = String(obj.studentNo || obj.studentNumber);
+        const stuRec = cachedStudentsMap.get(sNo.replace(/[\s-]/g, '')) || null;
+        const isStudentIdOnly = obj.type === 'CVSU_STUDENT_ID' || (!obj.bookCode && !obj.book && !obj.bookTitle);
         return {
-          studentNo: obj.studentNo || obj.studentNumber,
-          name: obj.name || obj.fullName || `Student ${obj.studentNo || obj.studentNumber}`,
-          course: obj.course || 'BS Information Technology',
-          email: obj.email || `${obj.studentNo || obj.studentNumber}@cvsu.edu.ph`,
-          mobile: obj.mobile || '09171234567',
-          book: obj.book || obj.bookTitle || 'General Library Access',
-          callNo: obj.callNo || obj.callNumber || 'GEN-LIB',
-          bookCode: obj.bookCode || 'BK-LIB',
+          isStudentIdOnly,
+          studentNo: sNo,
+          name: obj.name || obj.fullName || (stuRec ? stuRec.full_name : `Student ${sNo}`),
+          course: obj.course || (stuRec ? stuRec.course : 'BS Information Technology'),
+          email: obj.email || (stuRec ? stuRec.email : `${sNo}@cvsu.edu.ph`),
+          mobile: obj.mobile || (stuRec && stuRec.mobile_number ? stuRec.mobile_number : 'See Student Record'),
+          book: obj.book || obj.bookTitle || 'Select a book below',
+          callNo: obj.callNo || obj.callNumber || '—',
+          bookCode: obj.bookCode || '',
           loanType: obj.loanType || '3_days',
-          ref: obj.ref || obj.referenceNo || ('REF-' + Math.floor(1000 + Math.random() * 9000)),
+          ref: obj.ref || obj.referenceNo || ('BRW-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-4) + Math.floor(10 + Math.random() * 90)),
           borrowDate: obj.borrowDate || new Date().toISOString().split('T')[0],
           dueDate: obj.dueDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]
         };
@@ -242,6 +310,46 @@
       const labels = { '1_day': '1 Day', '2_days': '2 Days', '3_days': '3 Days', 'overnight': 'Overnight (10:00 AM)' };
       resLoanDurationLabel.textContent = labels[parsed.loanType] || '3 Days';
     }
+
+    const pickerWrap = document.getElementById('resBookPickerWrap');
+    const bookSel = document.getElementById('resBookSelect');
+    const loanSel = document.getElementById('resLoanTypeSelect');
+    if (pickerWrap && bookSel && window.CvsuCirculationEngine) {
+      if (parsed.isStudentIdOnly) {
+        const catalog = window.CvsuCirculationEngine.getCatalog();
+        bookSel.innerHTML = catalog.map(b => {
+          const avail = Number(b.available_copies || 0);
+          const roomTag = Number(b.is_room_use_only) === 1 ? ' [Room Use]' : '';
+          return `<option value="${b.book_code}" data-title="${b.title}" data-call="${b.call_number}" data-room="${b.is_room_use_only}" ${avail <= 0 ? 'disabled' : ''}>${b.book_code} — ${b.title} (${avail} avail)${roomTag}</option>`;
+        }).join('');
+        const firstEnabled = Array.from(bookSel.options).find(o => !o.disabled);
+        if (firstEnabled) bookSel.value = firstEnabled.value;
+
+        const syncPickerToDecoded = () => {
+          const opt = bookSel.options[bookSel.selectedIndex];
+          const lt = loanSel ? loanSel.value : '3_days';
+          const dueInfo = window.CvsuCirculationEngine.computeDueDate(parsed.borrowDate, lt);
+          if (opt) {
+            parsed.bookCode = opt.value;
+            parsed.book = opt.getAttribute('data-title') || opt.textContent;
+            parsed.callNo = opt.getAttribute('data-call') || 'N/A';
+            parsed.isRoomUseOnly = opt.getAttribute('data-room') === '1';
+          }
+          parsed.loanType = lt;
+          parsed.dueDate = dueInfo.dueDate;
+          if (resBookTitle) resBookTitle.textContent = parsed.book;
+          if (resCallNo) resCallNo.textContent = parsed.callNo;
+          if (resDueDate) resDueDate.textContent = parsed.dueDate;
+          if (resLoanDurationLabel) resLoanDurationLabel.textContent = dueInfo.label;
+        };
+        bookSel.onchange = syncPickerToDecoded;
+        if (loanSel) loanSel.onchange = syncPickerToDecoded;
+        syncPickerToDecoded();
+        pickerWrap.style.display = 'block';
+      } else {
+        pickerWrap.style.display = 'none';
+      }
+    }
     if (resActiveQuota && window.CvsuCirculationEngine) {
       const engine = window.CvsuCirculationEngine;
       const activeCount = engine.getActiveLoansForStudent(parsed.studentNo).length;
@@ -316,17 +424,30 @@
       isScanning = true;
       if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Camera Active. Point QR Code here</span>';
 
-      // BarcodeDetector loop (Chromium / Modern Edge / Chrome)
-      if ('BarcodeDetector' in window) {
-        const barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      // QR Detection Loop: use BarcodeDetector if available, otherwise vendored jsQR across all browsers
+      const useBarcodeDetector = ('BarcodeDetector' in window);
+      const barcodeDetector = useBarcodeDetector ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+      const useJsQr = (typeof window.jsQR === 'function');
 
-        async function detectLoop() {
+      if (barcodeDetector || useJsQr) {
+        let lastFrameCheck = 0;
+        async function detectLoop(ts) {
           if (!isScanning) return;
           try {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-              const barcodes = await barcodeDetector.detect(video);
-              if (barcodes && barcodes.length > 0) {
-                handleScannedCode(barcodes[0].rawValue);
+            if (video.readyState === video.HAVE_ENOUGH_DATA && (!lastFrameCheck || ts - lastFrameCheck >= 160)) {
+              lastFrameCheck = ts || Date.now();
+              let rawDecoded = null;
+              if (barcodeDetector) {
+                try {
+                  const barcodes = await barcodeDetector.detect(video);
+                  if (barcodes && barcodes.length > 0) rawDecoded = barcodes[0].rawValue;
+                } catch (bdErr) {}
+              }
+              if (!rawDecoded && useJsQr && video.videoWidth && video.videoHeight) {
+                rawDecoded = runJsQrOnCanvasRegion(video, 0, 0, video.videoWidth, video.videoHeight, video.videoWidth, video.videoHeight);
+              }
+              if (rawDecoded) {
+                handleScannedCode(rawDecoded);
               }
             }
           } catch (err) {
@@ -337,7 +458,7 @@
 
         scanAnimationId = requestAnimationFrame(detectLoop);
       } else {
-        if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Camera active (Use Quick Scan or modern browser for live decoding)</span>';
+        if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Camera active (Use Upload QR Image or Quick Scan)</span>';
       }
 
     } catch (err) {
@@ -636,6 +757,16 @@
       window.CvsuCirculationEngine.syncFromServer().then(res => {
         if (res && res.ok) renderSmartCirculationDesk();
       });
+      if (typeof window.CvsuCirculationEngine.listStudentsRemote === 'function') {
+        window.CvsuCirculationEngine.listStudentsRemote().then(sRes => {
+          if (sRes && sRes.ok && Array.isArray(sRes.data)) {
+            sRes.data.forEach(st => {
+              const cleanNo = String(st.student_number || '').replace(/[\s-]/g, '');
+              if (cleanNo) cachedStudentsMap.set(cleanNo, st);
+            });
+          }
+        });
+      }
     }
 
     // Start / Stop Camera Buttons
@@ -771,34 +902,52 @@
       });
     }
 
-    // File Upload QR Code Image Reader
+    // File Upload QR Code Image Reader (Accurate jsQR + BarcodeDetector — zero fake student fallback)
     const qrFileInput = document.getElementById('qrFileInput');
     if (qrFileInput) {
       qrFileInput.addEventListener('change', async function (e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        showToast('Processing uploaded QR image...', 'info');
-
+        showToast('Decoding uploaded QR image...', 'info');
+        const objectUrl = URL.createObjectURL(file);
         const img = new Image();
+
         img.onload = async function () {
-          if ('BarcodeDetector' in window) {
-            try {
-              const detector = new BarcodeDetector({ formats: ['qr_code'] });
-              const barcodes = await detector.detect(img);
-              if (barcodes && barcodes.length > 0) {
-                handleScannedCode(barcodes[0].rawValue);
-                return;
+          try {
+            let decodedText = decodeQrFromImageElement(img);
+
+            if (!decodedText && 'BarcodeDetector' in window) {
+              try {
+                const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                const barcodes = await detector.detect(img);
+                if (barcodes && barcodes.length > 0) {
+                  decodedText = barcodes[0].rawValue;
+                }
+              } catch (err) {
+                console.warn(err);
               }
-            } catch (err) {
-              console.warn(err);
             }
+
+            if (decodedText) {
+              lastScannedPayload = null;
+              handleScannedCode(decodedText);
+            } else {
+              showToast('Could not read a QR code from that image. Please upload a clearer or closer QR image.', 'error');
+            }
+          } finally {
+            URL.revokeObjectURL(objectUrl);
+            qrFileInput.value = '';
           }
-          // Fallback if BarcodeDetector fails on static image: trigger quick scan
-          const savedPassStr = localStorage.getItem(LATEST_BORROW_PASS_KEY);
-          handleScannedCode(savedPassStr || '202410001');
         };
-        img.src = URL.createObjectURL(file);
+
+        img.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          qrFileInput.value = '';
+          showToast('Invalid image file selected.', 'error');
+        };
+
+        img.src = objectUrl;
       });
     }
 

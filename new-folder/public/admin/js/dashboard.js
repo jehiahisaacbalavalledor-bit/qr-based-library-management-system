@@ -201,7 +201,7 @@
 
     function setActiveStudentView(viewName) {
       if (!dashboardContentBody) return;
-      const validViews = ['dashboard', 'qr', 'loans', 'catalog', 'profile'];
+      const validViews = ['dashboard', 'qr', 'loans', 'profile'];
       const targetView = validViews.includes(viewName) ? viewName : 'dashboard';
       dashboardContentBody.setAttribute('data-active-view', targetView);
 
@@ -239,7 +239,6 @@
       const hashToView = {
         '#studentQrSection': 'qr',
         '#myLoansSection': 'loans',
-        '#catalogLookupSection': 'catalog',
         '#studentProfileSection': 'profile'
       };
       if (hashToView[window.location.hash]) {
@@ -292,9 +291,13 @@
       const statBorrowedEl = document.getElementById('statBorrowedBooks');
       const statDueTodayEl = document.getElementById('statDueTodayBooks');
       const statOverdueEl = document.getElementById('statOverdueBooks');
+      const statAvailEl = document.getElementById('statAvailableBooks');
       if (statBorrowedEl) statBorrowedEl.textContent = `${activeForStudent.length} / ${engine.MAX_ACTIVE_BOOKS}`;
       if (statDueTodayEl) statDueTodayEl.textContent = studentDueTodayCount;
       if (statOverdueEl) statOverdueEl.textContent = `₱${totalStudentFine.toFixed(2)}`;
+      if (statAvailEl && engine.getCatalog().length > 0) {
+        statAvailEl.textContent = engine.getCatalog().reduce((s, b) => s + Number(b.available_copies || 0), 0);
+      }
 
       // Update Student Due/Overdue/Due-Soon Alert Banner dynamically
       const dueBanner = document.getElementById('dueTodayBanner');
@@ -302,9 +305,8 @@
         const headingEl = dueBanner.querySelector('h4 span:first-child');
         const pillEl = dueBanner.querySelector('h4 span:last-child');
         const descEl = dueBanner.querySelector('p');
-        const pickupReadyCount = (studentReservations || []).filter(r => r.status === 'ready_for_pickup').length;
 
-        if (studentDueTodayCount > 0 || studentOverdueCount > 0 || studentDueSoonCount > 0 || pickupReadyCount > 0) {
+        if (studentDueTodayCount > 0 || studentOverdueCount > 0 || studentDueSoonCount > 0) {
           dueBanner.style.display = '';
           if (pillEl) {
             if (studentOverdueCount > 0) {
@@ -313,12 +315,9 @@
             } else if (studentDueTodayCount > 0) {
               pillEl.textContent = 'DUE TODAY';
               pillEl.style.background = '#ea580c';
-            } else if (studentDueSoonCount > 0) {
+            } else {
               pillEl.textContent = 'DUE TOMORROW';
               pillEl.style.background = '#0284c7';
-            } else {
-              pillEl.textContent = 'HOLD READY';
-              pillEl.style.background = '#16a34a';
             }
           }
           if (headingEl) {
@@ -326,15 +325,12 @@
             if (studentOverdueCount > 0) parts.push(`${studentOverdueCount} Overdue`);
             if (studentDueTodayCount > 0) parts.push(`${studentDueTodayCount} Due Today`);
             if (studentDueSoonCount > 0) parts.push(`${studentDueSoonCount} Due Tomorrow`);
-            if (pickupReadyCount > 0) parts.push(`${pickupReadyCount} Hold Ready for Pickup`);
             headingEl.textContent = `Library Notice: ${parts.join(' | ')}`;
           }
           if (descEl) {
             descEl.innerHTML = totalStudentFine > 0
               ? `You have <strong>₱${totalStudentFine.toFixed(2)}</strong> in accrued/unpaid fines. Please return overdue books at the <strong>Library Circulation Desk</strong> (₱20.00/day, Fri–Sun &amp; holidays exempted).`
-              : (pickupReadyCount > 0 && studentDueTodayCount === 0 && studentDueSoonCount === 0
-                ? `Your reserved book hold is ready at the <strong>Library Circulation Desk</strong>. Present your Digital Student QR ID Pass to claim it.`
-                : `Please return or renew books before <strong>5:00 PM</strong> on the due date to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`);
+              : `Please return or renew books before <strong>5:00 PM</strong> on the due date to avoid the <strong>₱20.00/day penalty</strong> (Fridays, Saturdays, Sundays, and holidays exempted).`;
           }
         } else {
           dueBanner.style.display = 'none';
@@ -410,189 +406,11 @@
       }
     }
 
-    let studentReservations = [];
-
-    function renderStudentReservations() {
-      const listEl = document.getElementById('studentReservationsList');
-      if (!listEl) return;
-      if (!studentReservations || studentReservations.length === 0) {
-        listEl.innerHTML = `<div style="padding:10px 12px;border:1px dashed var(--border-subtle);border-radius:8px;color:var(--text-secondary);">No active book reservations. Checked-out titles in the catalog above display a <strong>Reserve Book</strong> button.</div>`;
-        return;
-      }
-      listEl.innerHTML = studentReservations.map(r => {
-        const statusColors = {
-          ready_for_pickup: 'background:#dcfce7;color:#166534;',
-          pending: 'background:#fef3c7;color:#92400e;',
-          fulfilled: 'background:#e0f2fe;color:#0369a1;',
-          cancelled: 'background:#f1f5f9;color:#64748b;'
-        };
-        const stStyle = statusColors[r.status] || statusColors.pending;
-        const canCancel = r.status === 'pending' || r.status === 'ready_for_pickup';
-        return `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-main);">
-            <div>
-              <strong style="color:var(--text-primary);">${escapeHtml(r.title)}</strong>
-              <div style="font-size:11.5px;color:var(--text-secondary);">Book Code: <code>${escapeHtml(r.book_code)}</code> | Call #: ${escapeHtml(r.call_number)}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="${stStyle}font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;text-transform:uppercase;">${escapeHtml(r.status.replace(/_/g, ' '))}</span>
-              ${canCancel ? `<button type="button" class="btn-cancel-res" data-res-id="${Number(r.id)}" style="padding:4px 9px;font-size:11px;border-radius:6px;border:1px solid #fecaca;background:#fef2f2;color:#dc2626;cursor:pointer;font-weight:600;">Cancel</button>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      listEl.querySelectorAll('.btn-cancel-res').forEach(btn => {
-        btn.addEventListener('click', async function () {
-          const engine = window.CvsuCirculationEngine;
-          if (!engine || !engine.API_BASE) return;
-          const id = Number(this.getAttribute('data-res-id'));
-          const res = await fetch(`${engine.API_BASE}books/reservations.php`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'cancel', id })
-          });
-          const json = await res.json();
-          showToast(json.message || 'Updated reservation.', json.status === 'success' ? 'success' : 'error');
-          await loadStudentReservations();
-          renderStudentCatalog(document.getElementById('studentCatalogSearch')?.value || '');
-        });
-      });
-    }
-
-    async function loadStudentReservations() {
-      const engine = window.CvsuCirculationEngine;
-      if (!engine || !engine.API_BASE) {
-        renderStudentReservations();
-        return;
-      }
-      try {
-        const res = await fetch(`${engine.API_BASE}books/reservations.php`, { credentials: 'same-origin' });
-        const json = await res.json();
-        if (json.status === 'success' && Array.isArray(json.data)) {
-          studentReservations = json.data;
-        }
-      } catch (e) {}
-      renderStudentReservations();
-      syncCirculationDashboard();
-    }
-
     syncCirculationDashboard();
-
-    // 5C. Read-Only Student Library Catalog Lookup
-    const STUDENT_CATALOG_BOOKS = [
-      { code: 'BK-CVSU-001', title: 'Clean Code: A Handbook of Agile Software Craftsmanship', author: 'Robert C. Martin', callNo: 'QA 76.6 .C67', available: 3, total: 4, roomOnly: false },
-      { code: 'BK-CVSU-002', title: 'Head First Java (3rd Edition)', author: 'Kathy Sierra & Bert Bates', callNo: 'QA 76.73 .J38', available: 3, total: 3, roomOnly: false },
-      { code: 'BK-CVSU-003', title: 'Database System Concepts (7th Edition)', author: 'Abraham Silberschatz, Henry F. Korth', callNo: 'QA 76.9 .D3 S54', available: 2, total: 3, roomOnly: false },
-      { code: 'BK-CVSU-004', title: 'Computer Networks (5th Edition)', author: 'Andrew S. Tanenbaum', callNo: 'QA 76.58 .T36', available: 2, total: 2, roomOnly: false },
-      { code: 'BK-CVSU-005', title: 'Web Design with HTML, CSS, JavaScript and jQuery', author: 'Jon Duckett', callNo: 'QA 76.76 .C672', available: 4, total: 5, roomOnly: false },
-      { code: 'BK-CVSU-006', title: 'CvSU Imus Undergraduate IT Theses Compendium Vol. IV', author: 'CvSU Dept. of Computer Studies', callNo: 'FIL QA 76.2 .C8', available: 1, total: 1, roomOnly: true }
-    ];
-
-    function renderStudentCatalog(query) {
-      const grid = document.getElementById('studentCatalogGrid');
-      if (!grid) return;
-      const engine = window.CvsuCirculationEngine;
-      const liveCatalog = (engine && engine.getCatalog().length > 0)
-        ? engine.getCatalog().map(b => ({
-            code: b.book_code,
-            title: b.title,
-            author: b.author,
-            callNo: b.call_number,
-            available: Number(b.available_copies),
-            total: Number(b.total_copies),
-            roomOnly: Number(b.is_room_use_only) === 1
-          }))
-        : STUDENT_CATALOG_BOOKS;
-
-      const statAvailEl = document.getElementById('statAvailableBooks');
-      if (statAvailEl && engine && engine.getCatalog().length > 0) {
-        const totalAvail = liveCatalog.reduce((s, b) => s + b.available, 0);
-        statAvailEl.textContent = totalAvail;
-      }
-
-      const q = (query || '').trim().toLowerCase();
-      const filtered = liveCatalog.filter(b =>
-        !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.callNo.toLowerCase().includes(q)
-      );
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 16px; color: var(--text-secondary); font-size: 13px;">No matching library books found.</div>`;
-        return;
-      }
-
-      grid.innerHTML = filtered.map(b => {
-        const activeHold = (studentReservations || []).find(
-          r => r.book_code === b.code && (r.status === 'pending' || r.status === 'ready_for_pickup')
-        );
-        const badge = b.roomOnly
-          ? `<span style="background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">🔒 Room Use Only</span>`
-          : (b.available > 0
-            ? `<span style="background:#dcfce7;color:#166534;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">✓ ${b.available} of ${b.total} Available</span>`
-            : `<span style="background:#fee2e2;color:#dc2626;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;">Checked Out</span>`);
-
-        const reserveAction = (!b.roomOnly && b.available === 0)
-          ? (activeHold
-            ? `<span style="font-size:11px;font-weight:700;color:#0284c7;margin-left:8px;">✓ Reserved (${escapeHtml(activeHold.status.replace(/_/g, ' '))})</span>`
-            : `<button type="button" class="btn-reserve-book" data-book-code="${escapeHtml(b.code)}" style="margin-left:8px;padding:3px 9px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid #0284c7;background:#eff6ff;color:#0369a1;cursor:pointer;">📌 Reserve Book</button>`)
-          : '';
-
-        return `
-          <div class="borrow-book-option" style="cursor: default;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
-              <h4 style="margin:0;">${escapeHtml(b.title)}</h4>
-            </div>
-            <p style="margin:0 0 6px 0;">Author: ${escapeHtml(b.author)} | Call #: <strong>${escapeHtml(b.callNo)}</strong></p>
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${badge}${reserveAction}</div>
-          </div>
-        `;
-      }).join('');
-
-      grid.querySelectorAll('.btn-reserve-book').forEach(btn => {
-        btn.addEventListener('click', async function () {
-          const engine = window.CvsuCirculationEngine;
-          if (!engine || !engine.API_BASE) {
-            showToast('Reservations require active server connection.', 'error');
-            return;
-          }
-          const bookCode = this.getAttribute('data-book-code');
-          this.disabled = true;
-          try {
-            const res = await fetch(`${engine.API_BASE}books/reservations.php`, {
-              method: 'POST',
-              credentials: 'same-origin',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'reserve', bookCode })
-            });
-            const json = await res.json();
-            showToast(json.message || 'Reservation request processed.', json.status === 'success' ? 'success' : 'error');
-            await loadStudentReservations();
-            renderStudentCatalog(document.getElementById('studentCatalogSearch')?.value || '');
-          } finally {
-            this.disabled = false;
-          }
-        });
-      });
-    }
-
-    renderStudentCatalog('');
 
     if (window.CvsuCirculationEngine) {
       window.CvsuCirculationEngine.syncFromServer().then(res => {
-        if (res && res.ok) {
-          syncCirculationDashboard();
-          const searchVal = document.getElementById('studentCatalogSearch')?.value || '';
-          renderStudentCatalog(searchVal);
-        }
-        loadStudentReservations();
-      });
-    }
-
-    const catalogSearchInput = document.getElementById('studentCatalogSearch');
-    if (catalogSearchInput) {
-      catalogSearchInput.addEventListener('input', function () {
-        renderStudentCatalog(this.value);
+        if (res && res.ok) syncCirculationDashboard();
       });
     }
 
