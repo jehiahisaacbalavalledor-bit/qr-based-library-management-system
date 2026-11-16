@@ -205,6 +205,31 @@ if ($baseUrl !== '') {
     $pdo->prepare("DELETE FROM admins WHERE employee_id = ?")->execute([$smokeEmp]);
     $pdo->prepare("DELETE FROM circulation_audit_logs WHERE student_number = ?")->execute([$smokeEmp]);
 
+    // Student full registration test
+    $smokeSno = '2026' . substr((string) time(), -5);
+    $stuRegCookies = [];
+    $stuReg = httpCall('POST', "{$baseUrl}/api/auth/register.php", [
+        'studentNumber'   => $smokeSno,
+        'fullName'        => 'Smoke Test Student',
+        'course'          => 'BS Computer Science',
+        'yearLevel'       => '2nd Year',
+        'email'           => "smoke{$smokeSno}@cvsu.edu.ph",
+        'mobile'          => '09179998888',
+        'dob'             => '2005-03-14',
+        'password'        => 'StudentTest123!',
+        'confirmPassword' => 'StudentTest123!'
+    ], $stuRegCookies);
+    assertTrue(
+        $stuReg['status'] === 200
+        && ($stuReg['json']['status'] ?? '') === 'success'
+        && ($stuReg['json']['data']['fullName'] ?? '') === 'Smoke Test Student'
+        && ($stuReg['json']['data']['course'] ?? '') === 'BS Computer Science',
+        'Student registration stores fullName, course, yearLevel, and sets session',
+        $stuReg['raw']
+    );
+    $pdo->prepare("DELETE FROM students WHERE student_number = ?")->execute([$smokeSno]);
+    $pdo->prepare("DELETE FROM circulation_audit_logs WHERE student_number = ?")->execute([$smokeSno]);
+
     // Student Auth & RBAC
     $stuCookies = [];
     $badStuLogin = httpCall('POST', "{$baseUrl}/api/auth/login.php", [

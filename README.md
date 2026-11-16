@@ -80,17 +80,18 @@ qr-based-library-management-system/
 
 1. **Import the Database**
    - Start MySQL (e.g., via XAMPP) and import [`new-folder/database/schema.sql`](new-folder/database/schema.sql) (`cvsu_library_db`).
-   - Check DB credentials in [`new-folder/backend/config/db.php`](new-folder/backend/config/db.php) (`localhost`, `root`, empty password by default).
+   - Check DB credentials in [`new-folder/backend/config/db.php`](new-folder/backend/config/db.php) (`localhost`, `root`, empty password by default — override via environment variables `CVSU_DB_HOST`, `CVSU_DB_NAME`, `CVSU_DB_USER`, `CVSU_DB_PASS` or an ignored `new-folder/backend/config/.env.php`).
 
 2. **Serve the Application**
    ```bash
    php -S 127.0.0.1:8088 -t new-folder/public
    ```
-   Or mirror `new-folder/` under `htdocs/` in XAMPP Apache.
+   Or copy `new-folder/` under `htdocs/` in XAMPP Apache.
 
-3. **Demo Accounts**
+3. **Demo Accounts & UAT Walkthrough**
    - **Head Librarian:** Employee ID `LIB-2024-001` | Password `AdminPassword123!` (`/admin/admin-index.html`)
    - **Student:** Student No `202410001` (DOB `2004-05-15`) | Password `Password123!` (`/index.html`)
+   - See [`UAT_CHECKLIST.md`](UAT_CHECKLIST.md) for a step-by-step client walkthrough & capstone demo checklist.
 
 4. **Run Automated Smoke Tests**
    ```bash

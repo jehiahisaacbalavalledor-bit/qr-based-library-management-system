@@ -62,10 +62,61 @@
               id="regStudentNumber" 
               name="studentNumber" 
               class="form-control" 
-              placeholder="" 
+              placeholder="e.g. 202610123" 
               required 
               autofocus
             >
+          </div>
+        </div>
+
+        <!-- 1b. Full Name Field -->
+        <div class="form-group">
+          <label for="regFullName" class="form-label">
+            Full Name <span class="required-star">*</span>
+          </label>
+          <div class="input-wrapper">
+            <input 
+              type="text" 
+              id="regFullName" 
+              name="fullName" 
+              class="form-control" 
+              placeholder="e.g. Juan C. Dela Cruz" 
+              required
+              autocomplete="name"
+            >
+          </div>
+        </div>
+
+        <!-- 1c. Course & Year Level -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px;">
+          <div class="form-group">
+            <label for="regCourse" class="form-label">
+              Course / Program <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+              <select id="regCourse" name="course" class="form-control" required>
+                <option value="BS Information Technology">BS Information Technology</option>
+                <option value="BS Computer Science">BS Computer Science</option>
+                <option value="BS Business Management">BS Business Management</option>
+                <option value="BS Hospitality Management">BS Hospitality Management</option>
+                <option value="BS Office Administration">BS Office Administration</option>
+                <option value="BS Secondary Education">BS Secondary Education</option>
+                <option value="BS Psychology">BS Psychology</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="regYearLevel" class="form-label">
+              Year Level <span class="required-star">*</span>
+            </label>
+            <div class="input-wrapper">
+              <select id="regYearLevel" name="yearLevel" class="form-control" required>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -135,7 +186,8 @@
               id="regPassword" 
               name="password" 
               class="form-control" 
-              placeholder="" 
+              placeholder="Minimum 8 characters" 
+              minlength="8"
               required 
               autocomplete="new-password"
             >

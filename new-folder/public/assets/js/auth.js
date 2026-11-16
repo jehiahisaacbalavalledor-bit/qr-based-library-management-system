@@ -668,6 +668,9 @@
         e.preventDefault();
 
         const studentInput = document.getElementById('regStudentNumber');
+        const fullNameInput = document.getElementById('regFullName');
+        const courseInput = document.getElementById('regCourse');
+        const yearInput = document.getElementById('regYearLevel');
         const emailInput = document.getElementById('regEmail');
         const mobileInput = document.getElementById('regMobile');
         const dobInput = document.getElementById('regDob');
@@ -676,6 +679,9 @@
         const submitBtn = document.getElementById('submitRegBtn');
 
         const studentNo = cleanStudentNumber(studentInput.value);
+        const fullName = fullNameInput ? fullNameInput.value.trim() : '';
+        const course = courseInput ? courseInput.value : 'BS Information Technology';
+        const yearLevel = yearInput ? yearInput.value : '1st Year';
         const email = emailInput.value.trim();
         const mobile = mobileInput.value.trim();
         const dob = dobInput.value;
@@ -685,6 +691,12 @@
         if (!studentNo || studentNo.length < 6) {
           showToast('Please enter a valid Student Number (e.g. 202410123).', 'error');
           studentInput.focus();
+          return;
+        }
+
+        if (fullNameInput && !fullName) {
+          showToast('Please enter your Full Name.', 'error');
+          fullNameInput.focus();
           return;
         }
 
@@ -708,8 +720,8 @@
           return;
         }
 
-        if (password.length < 6) {
-          showToast('Password must be at least 6 characters long.', 'error');
+        if (password.length < 8) {
+          showToast('Password must be at least 8 characters long.', 'error');
           passInput.focus();
           return;
         }
@@ -722,6 +734,57 @@
 
         submitBtn.disabled = true;
         submitBtn.innerText = 'Registering Account...';
+
+        if (IS_HTTP) {
+          try {
+            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/register.php`, {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                studentNumber: studentInput.value.trim(),
+                fullName: fullName || `Student ${studentNo}`,
+                course,
+                yearLevel,
+                email,
+                mobile,
+                dob,
+                password,
+                confirmPassword
+              })
+            });
+            const resData = await apiRes.json().catch(() => null);
+            if (apiRes.ok && resData && resData.status === 'success') {
+              const registeredUser = {
+                id: resData.data?.id,
+                studentNumber: resData.data?.studentNumber || studentInput.value.trim(),
+                fullName: resData.data?.fullName || fullName || `Student ${studentNo}`,
+                email,
+                mobile,
+                dob,
+                course: resData.data?.course || course,
+                yearLevel: resData.data?.yearLevel || yearLevel,
+                campus: 'Imus Campus',
+                borrowedBooks: []
+              };
+              sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(registeredUser));
+              showToast(resData.message || 'Account registered successfully!', 'success');
+              setTimeout(() => {
+                window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
+              }, 800);
+              return;
+            }
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Register';
+            showToast((resData && resData.message) || 'Could not complete registration.', 'error');
+            return;
+          } catch (apiErr) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Register';
+            showToast('Network error while connecting to server.', 'error');
+            return;
+          }
+        }
 
         setTimeout(() => {
           const users = getUsers();
@@ -736,12 +799,13 @@
 
           const newUser = {
             studentNumber: studentInput.value.trim(),
-            fullName: `Student ${studentNo}`,
+            fullName: fullName || `Student ${studentNo}`,
             email: email,
             mobile: mobile,
             dob: dob,
             password: password,
-            course: 'Cavite State University Student',
+            course: course,
+            yearLevel: yearLevel,
             campus: 'Imus Campus',
             registeredAt: new Date().toISOString(),
             borrowedBooks: []
