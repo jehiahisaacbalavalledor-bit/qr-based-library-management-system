@@ -743,6 +743,8 @@
                   <option value="RESERVATION_UPDATE">RESERVATION_UPDATE</option>
                   <option value="STAFF_UPDATE">STAFF_UPDATE</option>
                   <option value="PASSWORD_CHANGE">PASSWORD_CHANGE</option>
+                  <option value="PASSWORD_RESET">PASSWORD_RESET</option>
+                  <option value="ADMIN_PASSWORD_RESET">ADMIN_PASSWORD_RESET</option>
                   <option value="SYSTEM_RESTORE">SYSTEM_RESTORE</option>
                 </select>
                 <button type="button" class="btn-tbl-sm" id="printAuditBtn">Print Log</button>
@@ -1908,8 +1910,9 @@
                   </select>
                 </td>
                 <td>
-                  <div style="display:flex;gap:6px;">
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
                     <button type="button" class="btn-tbl-sm btn-save-staff" data-id="${Number(st.id)}" style="color:#16a34a;">Save</button>
+                    <button type="button" class="btn-tbl-sm btn-reset-staff-pwd" data-id="${Number(st.id)}" data-emp="${esc(st.employee_id)}" style="color:#0284c7;border-color:#bae6fd;">Reset Pwd</button>
                     <button type="button" class="btn-tbl-sm btn-del-staff" data-id="${Number(st.id)}" style="color:#dc2626;border-color:#fecaca;">Remove</button>
                   </div>
                 </td>
@@ -1931,6 +1934,27 @@
                 const j = await r.json();
                 showToast(j.message || 'Staff updated.', j.status === 'success' ? 'success' : 'error');
                 await loadStaffAccounts();
+              });
+            });
+
+            tbody.querySelectorAll('.btn-reset-staff-pwd').forEach(btn => {
+              btn.addEventListener('click', async function() {
+                const id = Number(this.getAttribute('data-id'));
+                const emp = this.getAttribute('data-emp') || 'staff';
+                const newPassword = prompt(`Enter new temporary password for ${emp} (minimum 8 characters):`);
+                if (newPassword === null) return;
+                if (newPassword.length < 8) {
+                  showToast('Temporary password must be at least 8 characters long.', 'error');
+                  return;
+                }
+                const r = await fetch(`${engine.API_BASE}staff/manage.php`, {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'reset_password', id, newPassword })
+                });
+                const j = await r.json();
+                showToast(j.message || 'Password reset.', r.ok && j.status === 'success' ? 'success' : 'error');
               });
             });
 

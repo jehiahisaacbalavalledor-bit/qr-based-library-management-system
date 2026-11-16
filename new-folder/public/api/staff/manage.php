@@ -70,6 +70,21 @@ try {
         exit;
     }
 
+    if ($action === 'reset_password') {
+        $newPassword = (string) ($input['newPassword'] ?? '');
+        if (strlen($newPassword) < 8) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'Temporary password must be at least 8 characters long.']);
+            exit;
+        }
+        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $pdo->prepare("UPDATE admins SET password_hash = ? WHERE id = ?")->execute([$hash, $staffId]);
+        $pdo->prepare("INSERT INTO circulation_audit_logs (action_type, student_number, book_title, details) VALUES (?, ?, ?, ?)")
+            ->execute(['ADMIN_PASSWORD_RESET', $actorEmpId, $target['full_name'], "Head Librarian reset password for {$target['employee_id']}"]);
+        echo json_encode(['status' => 'success', 'message' => "Password updated for {$target['full_name']} ({$target['employee_id']})."]);
+        exit;
+    }
+
     $newRole = trim($input['role'] ?? $target['role']);
     $newStatus = trim($input['status'] ?? $target['status']);
 

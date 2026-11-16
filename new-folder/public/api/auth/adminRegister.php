@@ -47,16 +47,18 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // 3. Password length check
-if (strlen($password) < 6) {
+if (strlen($password) < 8) {
+    http_response_code(400);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Password must be at least 6 characters long.'
+        'message' => 'Password must be at least 8 characters long.'
     ]);
     exit;
 }
 
 // 4. Confirm password matching
 if ($password !== $confirmPassword) {
+    http_response_code(400);
     echo json_encode([
         'status' => 'error',
         'message' => 'Passwords do not match. Please re-enter.'
@@ -64,11 +66,21 @@ if ($password !== $confirmPassword) {
     exit;
 }
 
-// 5. Allowed roles whitelist
+// 5. Role & privilege gate: only an authenticated Head Librarian/System Administrator
+// can directly provision active staff or grant Head Librarian / System Administrator roles.
+$currentSession = AuthGuard::currentSession();
+$isHeadLibrarianSession = !empty($currentSession['authenticated'])
+    && ($currentSession['user_type'] ?? '') === 'admin'
+    && in_array($currentSession['role'] ?? '', ['Head Librarian', 'System Administrator'], true);
+
 $allowedRoles = ['Head Librarian', 'Circulation Desk Officer', 'Cataloger', 'System Administrator'];
-if (!in_array($role, $allowedRoles)) {
+if (!in_array($role, $allowedRoles, true)) {
     $role = 'Circulation Desk Officer';
 }
+if (!$isHeadLibrarianSession && in_array($role, ['Head Librarian', 'System Administrator'], true)) {
+    $role = 'Circulation Desk Officer';
+}
+$initialStatus = $isHeadLibrarianSession ? 'active' : 'inactive';
 
 try {
     // Check for existing employee ID or email
@@ -98,29 +110,17 @@ try {
     }
 
     // Hash password with bcrypt
+    // Hash password with bcrypt
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
-    // Insert new staff member
+    // Insert new staff member (public self-registration stays inactive until Head Librarian activates it)
     $insertStmt = $pdo->prepare("
         INSERT INTO admins (employee_id, full_name, email, role, password_hash, status)
-        VALUES (?, ?, ?, ?, ?, 'active')
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
-    $insertStmt->execute([$employeeId, $fullName, $email, $role, $passwordHash]);
+    $insertStmt->execute([$employeeId, $fullName, $email, $role, $passwordHash, $initialStatus]);
 
     $newAdminId = $pdo->lastInsertId();
-
-    // Set staff session
-    AuthGuard::setAdminSession([
-        'id'          => $newAdminId,
-        'employee_id' => $employeeId,
-        'full_name'   => $fullName,
-        'role'        => $role
-    ]);
-    $_SESSION['admin_id'] = $newAdminId;
-    $_SESSION['employee_id'] = $employeeId;
-    $_SESSION['admin_name'] = $fullName;
-    $_SESSION['admin_role'] = $role;
-    $_SESSION['admin_email'] = $email;
 
     // Record action in audit log
     try {
@@ -128,20 +128,40 @@ try {
             INSERT INTO circulation_audit_logs (action_type, student_number, book_title, details)
             VALUES ('ADMIN_REGISTER', ?, 'Staff Account Registered', ?)
         ");
-        $auditStmt->execute([$employeeId, "Role: {$role} | Name: {$fullName}"]);
+        $auditStmt->execute([$employeeId, "Role: {$role} | Status: {$initialStatus} | Name: {$fullName}"]);
     } catch (Exception $auditEx) {
         // Non-blocking
     }
 
+    if (!$isHeadLibrarianSession) {
+        echo json_encode([
+            'status' => 'success',
+            'pendingApproval' => true,
+            'message' => 'Staff registration submitted! A Head Librarian must activate your account before you can sign in.',
+            'data' => [
+                'id' => $newAdminId,
+                'employeeId' => $employeeId,
+                'fullName' => $fullName,
+                'email' => $email,
+                'role' => $role,
+                'status' => $initialStatus,
+                'campus' => 'Imus Campus'
+            ]
+        ]);
+        exit;
+    }
+
     echo json_encode([
         'status' => 'success',
-        'message' => 'Staff account successfully created! Redirecting to Admin Console...',
+        'pendingApproval' => false,
+        'message' => 'Staff account created and activated!',
         'data' => [
             'id' => $newAdminId,
             'employeeId' => $employeeId,
             'fullName' => $fullName,
             'email' => $email,
             'role' => $role,
+            'status' => $initialStatus,
             'campus' => 'Imus Campus'
         ]
     ]);

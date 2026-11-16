@@ -1,93 +1,98 @@
 # QR-Based Library Book Borrowing Management System
 ### Cavite State University - Imus Campus (CvSU)
 
-**Project Status:** Complete Multi-Milestone Integrated Library Management System (20% to 100%) with Admin Portal & Dual QR Code Circulation.
-
-An intelligent library management and book borrowing system featuring student and administrative authentication, physical book QR spine label generation and printing, dynamic borrowing QR slips, circulation counter scanner, due date & penalty computation, and comprehensive library catalog management.
+An integrated full-stack library management and QR circulation system featuring Role-Based Access Control (RBAC), dual QR code checkout/return scanning, custom CvSU overdue penalty computation, book reservations, student clearance certificates, batch QR label/card printing, CSV import/export, and JSON/SQL backup & restore.
 
 ---
 
-## 🎯 Capstone Development Roadmap & Deliverables
+## Key Features
 
-| Milestone | Scope | Modules Delivered | Status |
-| :---: | :--- | :--- | :--- |
-| **20%** | **Phase 1: Student & Admin Authentication** | Sign In, Registration, Admin Login/Register, CvSU Validation, Student QR ID Pass | **COMPLETED** |
-| **40%** | **Phase 2: Book Inventory & Physical QR Generator** | Catalog Search, Book QR Spine Label Generator (`books-qr.html`), Stock Tracking | **COMPLETED** |
-| **60%** | **Phase 3: QR Scanner & Circulation Desk** | Camera Scanner (`scanner.html`), Beep Audio, Dual QR Recognition (Book & Student), Instant Loan Desk | **COMPLETED** |
-| **40% - 80%** | **Phase 4: Due Date Tracking & Penalty Computation** | Active Loans Tracker, Due Date Countdown, ₱20/day Overdue Fine (skips Fri-Sun & holidays), 1-Click Return | **COMPLETED** |
-| **100%** | **Phase 5: Librarian Analytics & Admin Dashboard** | KPI Overview Cards, Due Today Banner, Admin Portal (`admin-dashboard.html`), Circulation Slips | **COMPLETED** |
+1. **Dual QR Code Circulation**
+   - **Book QR Spine Label Generator** (`admin/pages/books/books-qr.html`): Generates single or batch A4/2-column/thermal printable QR stickers encoding Book ID, Accession Number, Call Number, and Title.
+   - **Student Digital QR Pass & Borrow Slip** (`user/pages/dashboard.html`): Generates scannable student ID passes, borrow QR slips, and batch printable student QR cards (`admin/admin-dashboard.html`).
+   - **Live Circulation Scanner & Receipt Printer** (`admin/pages/transactions/scanner.html`): Supports webcam scanning, USB barcode guns, manual QR/token entry, sound feedback, and one-click printable BORROW / RENEW / RETURN receipts.
+
+2. **Smart Circulation & Fine Rules (`FineEngine` / `circulation-engine.js`)**
+   - Enforces a **2-book active loan limit** per student and blocks **Room Use Only** items from checkout.
+   - Prevents borrowing or renewals when a student has **unpaid fines**.
+   - Supports **1–3 day** and **overnight** loans with up to **2 renewals**.
+   - Calculates **₱20.00/day** overdue fines automatically **skipping Fridays, Saturdays, Sundays, and configured Library Holidays**.
+   - Tracks damaged/lost book replacement requirements and fine settlement (`paid` / `waived`).
+
+3. **Security, Authentication & RBAC**
+   - Server-side PHP session RBAC (`backend/helpers/AuthGuard.php`) protecting 18+ API endpoints and `route-guard.js` protecting portal pages.
+   - Bcrypt password verification (`password_verify`), active account checks, in-app password updates (`api/auth/changePassword.php`), DOB-verified student self-service password reset, and Head Librarian approval/reset controls for staff accounts.
+   - HTML-escaped table rendering (`escHtml`) and same-origin session cookies across client calls.
+
+4. **Librarian & System Administration (`admin/admin-dashboard.html`)**
+   - Live KPIs, overdue/due-soon alert badges, overdue follow-up CSV export, daily/monthly/fine reports.
+   - Book & Student CRUD + CSV bulk import/export templates.
+   - Student **Library Clearance Certificate** verifier & printable slip.
+   - **Book Reservations & Hold Queue** (student reserve/cancel + staff mark ready/fulfill).
+   - **Head Librarian Staff Management** (role assignment, account activation/deactivation, temporary password reset).
+   - **Holiday Calendar**, filterable **Circulation Audit Trail**, and **1-Click JSON/SQL Backup & Safe Restore**.
 
 ---
 
-## 🌟 Key Features
+## Directory Structure
 
-### 1. Dual QR Code System
-- **Book Identification QR Code (`books-qr.html`)**: Generates official Cavite State University QR spine labels for physical books. Each printable sticker includes Book ID, Accession Number, Call Number, and Title label at the bottom.
-- **Student Borrowing QR Pass / Slip (`dashboard.html`)**: Generates real-time loan QR passes containing verified student credentials, selected titles, loan duration, and transaction references.
-
-### 2. Student & Admin Portals
-- **Student Portal (`index.html`, `dashboard.html`)**: Student authentication, live catalog search, digital QR ID, active borrowings, and return history.
-- **Admin & Librarian Portal (`admin-index.html`, `admin-dashboard.html`)**: Administrative authentication, staff access, book catalog management, and library controls.
-
-### 3. Circulation Desk QR Scanner (`scanner.html`)
-- Live webcam and USB/Bluetooth barcode gun scanner support.
-- Automatic recognition of `CVSU_BOOK_QR` and student borrow tokens with POS sound effects.
-- Room-use-only alerts for Special Collections and instant circulation log.
-
----
-
-## 📁 Directory Structure
-```
+```text
 qr-based-library-management-system/
-├── index.html                 # Student Sign In Page
-├── register.html              # Student Registration Page
-├── forgot-password.html       # Student Password Reset Page
-├── dashboard.html             # Student Dashboard & Borrowing Hub
-├── books-qr.html              # Book QR Label Generator & Catalog Printer
-├── scanner.html               # Circulation Desk QR Scanner & Loan Processor
-├── admin-index.html           # Admin Portal Login
-├── admin-register.html        # Admin Account Registration
-├── admin-dashboard.html       # Librarian & Admin Dashboard
-├── css/
-│   ├── style.css              # CvSU Green theme and shared component styles
-│   ├── dashboard.css          # Modern dashboard grid, dark mode & layout
-│   └── books-qr.css           # QR sticker print sheets and catalog UI
-├── js/
-│   ├── auth.js                # Student login & registration handlers
-│   ├── admin.js               # Admin authentication and dashboard handlers
-│   ├── dashboard.js           # Student circulation & borrow request logic
-│   ├── books-qr.js            # Book catalog and sticker rendering
-│   ├── scanner.js             # Camera stream, beep audio & scanner logic
-│   └── qrcode.min.js          # QR code rendering engine (40-version support)
-├── api/                       # PHP API backend for XAMPP / MySQL
-│   ├── db.php                 # MySQL PDO connection
-│   ├── login.php              # Student authentication endpoint
-│   ├── register.php           # Student registration endpoint
-│   ├── adminLogin.php         # Admin authentication endpoint
-│   └── adminRegister.php      # Admin registration endpoint
-├── database/
-│   └── schema.sql             # MySQL relational database schema and seed data
-├── assets/
-│   └── logo.svg               # Vector University emblem
-└── README.md
+├── README.md
+└── new-folder/
+    ├── backend/
+    │   ├── config/
+    │   │   └── db.php                  # MySQL PDO configuration (cvsu_library_db)
+    │   └── helpers/
+    │       ├── AuthGuard.php           # Session & RBAC enforcement
+    │       └── FineEngine.php          # CvSU ₱20/day fine & holiday calculation
+    ├── database/
+    │   └── schema.sql                  # Full MySQL schema & seeded campus data
+    ├── tests/
+    │   └── smoke_test.php              # CLI schema, FineEngine & API smoke tests
+    └── public/
+        ├── index.html                  # Student Sign In (index.php redirects here)
+        ├── user/
+        │   ├── register.html
+        │   ├── forgot-password.html
+        │   └── pages/dashboard.html    # Student Dashboard, Borrow Slip & Reservations
+        ├── admin/
+        │   ├── admin-index.html        # Admin / Staff Sign In
+        │   ├── admin-register.html     # Staff Registration (Head Librarian approval)
+        │   ├── admin-forgot-password.html
+        │   ├── admin-dashboard.html    # Main Librarian & Head Librarian Console
+        │   ├── js/                     # dashboard.js, scanner.js, books-qr.js
+        │   └── pages/
+        │       ├── books/books-qr.html
+        │       └── transactions/scanner.html
+        ├── api/                        # Authenticated PHP REST endpoints
+        │   ├── audit/, auth/, books/, circulation/
+        │   ├── holidays/, reports/, staff/, students/, system/
+        └── assets/
+            ├── images/                 # University logo assets
+            ├── js/                     # auth.js, circulation-engine.js, route-guard.js
+            └── vendor/qrcode/          # Local qrcode.min.js bundle
 ```
 
 ---
 
-## 🚀 How to Run and Test
+## Quick Start (Local Development)
 
-### Method 1: Direct Browser Launch (No server needed)
-1. Open **`index.html`** directly in any modern web browser.
-2. Sign in with demo credentials:
-   - **Student Number:** `202410001`
-   - **Password:** `Password123!`
-3. Or open **`books-qr.html`** to generate and print book spine QR labels.
-4. Open **`scanner.html`** to test camera or simulated scanning.
+1. **Import the Database**
+   - Start MySQL (e.g., via XAMPP) and import [`new-folder/database/schema.sql`](new-folder/database/schema.sql) (`cvsu_library_db`).
+   - Check DB credentials in [`new-folder/backend/config/db.php`](new-folder/backend/config/db.php) (`localhost`, `root`, empty password by default).
 
-### Method 2: Local XAMPP Server
-1. Move or clone the project folder into `C:\xampp\htdocs\qr-based-library-management-system`.
-2. Start **Apache** and **MySQL** in the XAMPP Control Panel.
-3. Import `database/schema.sql` into phpMyAdmin (`http://localhost/phpmyadmin`).
-4. Access the system at:
-   - Student Portal: `http://localhost/qr-based-library-management-system/`
-   - Admin Portal: `http://localhost/qr-based-library-management-system/admin-index.html`
+2. **Serve the Application**
+   ```bash
+   php -S 127.0.0.1:8088 -t new-folder/public
+   ```
+   Or mirror `new-folder/` under `htdocs/` in XAMPP Apache.
+
+3. **Demo Accounts**
+   - **Head Librarian:** Employee ID `LIB-2024-001` | Password `AdminPassword123!` (`/admin/admin-index.html`)
+   - **Student:** Student No `202410001` (DOB `2004-05-15`) | Password `Password123!` (`/index.html`)
+
+4. **Run Automated Smoke Tests**
+   ```bash
+   php new-folder/tests/smoke_test.php --url=http://127.0.0.1:8088
+   ```

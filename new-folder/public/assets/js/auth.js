@@ -516,17 +516,27 @@
               })
             });
 
-            if (apiRes.ok) {
-              const resData = await apiRes.json();
-              if (resData.status === 'success') {
+            const resData = await apiRes.json().catch(() => null);
+            if (resData) {
+              if (apiRes.ok && resData.status === 'success') {
+                if (resData.pendingApproval) {
+                  showToast(resData.message || 'Staff registration submitted for Head Librarian approval.', 'success');
+                  setTimeout(() => {
+                    window.location.href = `${PUBLIC_BASE}admin/admin-index.html`;
+                  }, 1400);
+                  return;
+                }
+                const createdRole = resData.data?.role || role;
                 const newAdmin = {
                   employeeId: employeeId,
                   fullName: fullName,
                   email: email,
-                  role: role,
+                  role: createdRole,
                   campus: 'Imus Campus'
                 };
-                sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(newAdmin));
+                if (!sessionStorage.getItem(SESSION_ADMIN_KEY)) {
+                  sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(newAdmin));
+                }
                 showToast(resData.message || 'Staff account created successfully via API!', 'success');
                 setTimeout(() => {
                   window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
@@ -595,8 +605,8 @@
         const email = (emailInput.value || '').trim().toLowerCase();
         const newPassword = newPwInput ? newPwInput.value : '';
 
-        if (!empId || !email || newPassword.length < 6) {
-          showToast('Provide Employee ID, Email, and a new password (min 6 chars).', 'error');
+        if (!empId || !email || newPassword.length < 8) {
+          showToast('Provide Employee ID, Email, and a new password (min 8 chars).', 'error');
           return;
         }
 
@@ -760,15 +770,17 @@
 
         const studentInput = document.getElementById('recoveryStudentNumber');
         const emailInput = document.getElementById('recoveryEmail');
+        const dobInput = document.getElementById('recoveryDob');
         const newPwInput = document.getElementById('recoveryNewPassword');
         const submitBtn = document.getElementById('submitRecoveryBtn');
 
         const studentNo = cleanStudentNumber(studentInput.value);
         const email = emailInput.value.trim().toLowerCase();
+        const dob = dobInput ? dobInput.value.trim() : '';
         const newPassword = newPwInput ? newPwInput.value : '';
 
-        if (!studentNo || !email || newPassword.length < 6) {
-          showToast('Fill in Student Number, Email, and a new password (min 6 chars).', 'error');
+        if (!studentNo || !email || !dob || newPassword.length < 8) {
+          showToast('Fill in Student Number, Email, Date of Birth, and a new password (min 8 chars).', 'error');
           return;
         }
 
@@ -781,10 +793,10 @@
               method: 'POST',
               credentials: 'same-origin',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userType: 'student', studentNumber: studentNo, email, newPassword })
+              body: JSON.stringify({ userType: 'student', studentNumber: studentNo, email, dateOfBirth: dob, newPassword })
             });
             const json = await res.json();
-            if (json.status === 'success') {
+            if (res.ok && json.status === 'success') {
               showToast(json.message, 'success');
               setTimeout(() => { window.location.href = `${PUBLIC_BASE}index.html`; }, 1500);
               return;
@@ -793,7 +805,7 @@
             return;
           }
           const users = getUsers();
-          const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.email.toLowerCase() === email);
+          const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.email.toLowerCase() === email && (!u.dob || u.dob === dob));
           if (matchedUser) {
             matchedUser.password = newPassword;
             saveUsers(users);

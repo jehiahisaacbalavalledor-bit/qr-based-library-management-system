@@ -10,6 +10,7 @@ USE `cvsu_library_db`;
 
 -- Drop tables in proper foreign key dependency order if resetting
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `book_reservations`;
 DROP TABLE IF EXISTS `circulation_audit_logs`;
 DROP TABLE IF EXISTS `activity_logs`;
 DROP TABLE IF EXISTS `fines`;
