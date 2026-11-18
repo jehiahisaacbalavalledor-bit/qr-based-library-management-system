@@ -16,36 +16,80 @@
   let lastScannedPayload = null;
   let currentDecodedData = null;
   let cachedStudentsMap = new Map();
+  let decodeCanvas = null;
 
-  function runJsQrOnCanvasRegion(source, sx, sy, sw, sh, targetW, targetH) {
-    if (typeof window.jsQR !== 'function') return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  function computeOtsuThreshold(rgba) {
+    const hist = new Uint32Array(256);
+    const totalPixels = rgba.length >> 2;
+    for (let i = 0; i < rgba.length; i += 4) {
+      const a = rgba[i + 3];
+      const lum = a < 128 ? 255 : ((77 * rgba[i] + 150 * rgba[i + 1] + 29 * rgba[i + 2]) >> 8);
+      hist[lum]++;
+    }
+    let sum = 0;
+    for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let sumB = 0;
+    let wB = 0;
+    let maxVar = -1;
+    let thresholdSum = 0;
+    let thresholdCount = 0;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t];
+      if (wB === 0) continue;
+      const wF = totalPixels - wB;
+      if (wF === 0) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB;
+      const mF = (sum - sumB) / wF;
+      const betweenVar = wB * wF * (mB - mF) * (mB - mF);
+      if (betweenVar > maxVar) {
+        maxVar = betweenVar;
+        thresholdSum = t;
+        thresholdCount = 1;
+      } else if (betweenVar === maxVar) {
+        thresholdSum += t;
+        thresholdCount++;
+      }
+    }
+    return thresholdCount > 0 ? Math.round(thresholdSum / thresholdCount) : 128;
+  }
+
+  function runJsQrOnCanvasRegion(source, sx, sy, sw, sh, targetW, targetH, mirror = false) {
+    if (typeof window.jsQR !== 'function' || targetW < 32 || targetH < 32) return null;
+    if (!decodeCanvas) decodeCanvas = document.createElement('canvas');
+    if (decodeCanvas.width !== targetW) decodeCanvas.width = targetW;
+    if (decodeCanvas.height !== targetH) decodeCanvas.height = targetH;
+    const ctx = decodeCanvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
+    ctx.save();
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, targetW, targetH);
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = targetW > sw || targetH > sh ? false : true;
+    if (mirror) {
+      ctx.translate(targetW, 0);
+      ctx.scale(-1, 1);
+    }
     ctx.drawImage(source, sx, sy, sw, sh, 0, 0, targetW, targetH);
+    ctx.restore();
 
     const imgData = ctx.getImageData(0, 0, targetW, targetH);
     const direct = window.jsQR(imgData.data, targetW, targetH, { inversionAttempts: 'attemptBoth' });
     if (direct && direct.data) return direct.data;
 
-    // High-contrast luminance binarization for colored QR codes (e.g. CvSU green #00875a)
+    // Adaptive Otsu binarization for colored QR codes (e.g. CvSU green #00875a) & varying webcam lighting
+    const cutoff = computeOtsuThreshold(imgData.data);
     const binarized = new Uint8ClampedArray(imgData.data);
     for (let i = 0; i < binarized.length; i += 4) {
       const a = binarized[i + 3];
-      const lum = a < 128 ? 255 : (0.299 * binarized[i] + 0.587 * binarized[i + 1] + 0.114 * binarized[i + 2]);
-      const bw = lum < 175 ? 0 : 255;
+      const lum = a < 128 ? 255 : ((77 * binarized[i] + 150 * binarized[i + 1] + 29 * binarized[i + 2]) >> 8);
+      const bw = lum < cutoff ? 0 : 255;
       binarized[i] = bw;
       binarized[i + 1] = bw;
       binarized[i + 2] = bw;
       binarized[i + 3] = 255;
     }
-    const bwMatch = window.jsQR(binarized, targetW, targetH, { inversionAttempts: 'dontInvert' });
+    const bwMatch = window.jsQR(binarized, targetW, targetH, { inversionAttempts: 'attemptBoth' });
     return bwMatch && bwMatch.data ? bwMatch.data : null;
   }
 
@@ -400,8 +444,58 @@
     });
   }
 
+  async function populateCameraList(activeDeviceId) {
+    const wrap = document.getElementById('cameraSelectWrap');
+    const select = document.getElementById('cameraSelect');
+    if (!wrap || !select || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      if (cams.length <= 1) {
+        wrap.style.display = 'none';
+        return;
+      }
+      select.innerHTML = '';
+      cams.forEach((cam, idx) => {
+        const opt = document.createElement('option');
+        opt.value = cam.deviceId;
+        opt.textContent = cam.label || `Camera ${idx + 1}`;
+        if (activeDeviceId && cam.deviceId === activeDeviceId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      wrap.style.display = 'flex';
+    } catch (e) {}
+  }
+
+  function decodeCameraFrame(video, frameCount) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh || typeof window.jsQR !== 'function') return null;
+
+    // 1. Center square ROI matching the green viewfinder overlay (eliminates room clutter & boosts module size)
+    const roiSide = Math.round(Math.min(vw, vh) * 0.72);
+    const rx = Math.max(0, Math.round((vw - roiSide) / 2));
+    const ry = Math.max(0, Math.round((vh - roiSide) / 2));
+    const roiTarget = Math.min(640, Math.max(420, roiSide));
+    const centerHit = runJsQrOnCanvasRegion(video, rx, ry, roiSide, roiSide, roiTarget, roiTarget, false);
+    if (centerHit) return centerHit;
+
+    // 2. Full frame fallback (handles QR codes held closer or slightly off-center)
+    const fullScale = Math.min(1, 640 / Math.max(vw, vh));
+    const fw = Math.max(160, Math.round(vw * fullScale));
+    const fh = Math.max(120, Math.round(vh * fullScale));
+    const fullHit = runJsQrOnCanvasRegion(video, 0, 0, vw, vh, fw, fh, false);
+    if (fullHit) return fullHit;
+
+    // 3. Periodic horizontally-mirrored ROI pass for laptop/virtual webcams that mirror hardware streams
+    if (frameCount % 3 === 0) {
+      return runJsQrOnCanvasRegion(video, rx, ry, roiSide, roiSide, roiTarget, roiTarget, true);
+    }
+    return null;
+  }
+
   // Camera Scanner Loop
-  async function startCameraScanner() {
+  async function startCameraScanner(preferredDeviceId) {
     const video = document.getElementById('scannerVideo');
     const statusText = document.getElementById('cameraStatusText');
 
@@ -411,40 +505,70 @@
       return;
     }
 
+    stopCameraScanner(true);
+
     try {
       if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Starting camera...</span>';
-      
-      videoStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-      });
+
+      const selectedId = preferredDeviceId || (document.getElementById('cameraSelect')?.value || '');
+      const baseConstraints = selectedId
+        ? { deviceId: { exact: selectedId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        : { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } };
+
+      try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: baseConstraints });
+      } catch (constraintErr) {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
+      const activeTrack = videoStream.getVideoTracks()[0];
+      if (activeTrack && activeTrack.applyConstraints) {
+        activeTrack.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {});
+      }
+      const activeSettings = activeTrack && activeTrack.getSettings ? activeTrack.getSettings() : {};
+      populateCameraList(activeSettings.deviceId || selectedId);
 
       video.srcObject = videoStream;
       await video.play();
 
       isScanning = true;
-      if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Camera Active. Point QR Code here</span>';
+      if (statusText) statusText.innerHTML = '<span class="status-dot-pulse"></span> <span>Camera Active. Center QR code inside box</span>';
 
-      // QR Detection Loop: use BarcodeDetector if available, otherwise vendored jsQR across all browsers
-      const useBarcodeDetector = ('BarcodeDetector' in window);
-      const barcodeDetector = useBarcodeDetector ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+      // Verify BarcodeDetector truly supports qr_code (avoid stalling frames on unsupported Windows implementations)
+      let barcodeDetector = null;
+      if ('BarcodeDetector' in window) {
+        try {
+          const formats = typeof BarcodeDetector.getSupportedFormats === 'function'
+            ? await BarcodeDetector.getSupportedFormats()
+            : ['qr_code'];
+          if (Array.isArray(formats) && formats.includes('qr_code')) {
+            barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+          }
+        } catch (bdInitErr) {
+          barcodeDetector = null;
+        }
+      }
       const useJsQr = (typeof window.jsQR === 'function');
 
       if (barcodeDetector || useJsQr) {
         let lastFrameCheck = 0;
+        let frameCount = 0;
         async function detectLoop(ts) {
           if (!isScanning) return;
           try {
-            if (video.readyState === video.HAVE_ENOUGH_DATA && (!lastFrameCheck || ts - lastFrameCheck >= 160)) {
-              lastFrameCheck = ts || Date.now();
+            const nowMs = ts || Date.now();
+            if (video.readyState >= video.HAVE_CURRENT_DATA && video.videoWidth > 0 && (!lastFrameCheck || nowMs - lastFrameCheck >= 120)) {
+              lastFrameCheck = nowMs;
+              frameCount++;
               let rawDecoded = null;
-              if (barcodeDetector) {
+              if (useJsQr) {
+                rawDecoded = decodeCameraFrame(video, frameCount);
+              }
+              if (!rawDecoded && barcodeDetector && frameCount % 2 === 0) {
                 try {
                   const barcodes = await barcodeDetector.detect(video);
                   if (barcodes && barcodes.length > 0) rawDecoded = barcodes[0].rawValue;
                 } catch (bdErr) {}
-              }
-              if (!rawDecoded && useJsQr && video.videoWidth && video.videoHeight) {
-                rawDecoded = runJsQrOnCanvasRegion(video, 0, 0, video.videoWidth, video.videoHeight, video.videoWidth, video.videoHeight);
               }
               if (rawDecoded) {
                 handleScannedCode(rawDecoded);
@@ -453,7 +577,7 @@
           } catch (err) {
             // Frame detection error, continue
           }
-          scanAnimationId = requestAnimationFrame(detectLoop);
+          if (isScanning) scanAnimationId = requestAnimationFrame(detectLoop);
         }
 
         scanAnimationId = requestAnimationFrame(detectLoop);
@@ -468,7 +592,7 @@
     }
   }
 
-  function stopCameraScanner() {
+  function stopCameraScanner(silent = false) {
     isScanning = false;
     if (scanAnimationId) {
       cancelAnimationFrame(scanAnimationId);
@@ -483,8 +607,10 @@
     const video = document.getElementById('scannerVideo');
     if (video) video.srcObject = null;
 
-    const statusText = document.getElementById('cameraStatusText');
-    if (statusText) statusText.innerHTML = '<span>Camera stopped. Click Start Camera</span>';
+    if (!silent) {
+      const statusText = document.getElementById('cameraStatusText');
+      if (statusText) statusText.innerHTML = '<span>Camera stopped. Click Start Camera</span>';
+    }
   }
 
   // Render Smart Circulation Desk: Active Loans & Live Fine Engine
@@ -779,6 +905,13 @@
       });
     }
 
+    const cameraSelect = document.getElementById('cameraSelect');
+    if (cameraSelect) {
+      cameraSelect.addEventListener('change', function () {
+        startCameraScanner(this.value);
+      });
+    }
+
     if (stopCamBtn) {
       stopCamBtn.addEventListener('click', function () {
         stopCameraScanner();
@@ -1015,6 +1148,7 @@
           if (resultBox) resultBox.classList.remove('active');
           if (emptyState) emptyState.style.display = 'block';
           currentDecodedData = null;
+          lastScannedPayload = null;
         }, 1200);
       });
     }
@@ -1028,6 +1162,7 @@
         if (resultBox) resultBox.classList.remove('active');
         if (emptyState) emptyState.style.display = 'block';
         currentDecodedData = null;
+        lastScannedPayload = null;
         showToast('Ready for next QR scan.', 'info');
       });
     }

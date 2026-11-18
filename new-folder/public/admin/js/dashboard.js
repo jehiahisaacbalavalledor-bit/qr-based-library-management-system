@@ -261,9 +261,10 @@
 
       new QRCode(studentQrContainer, {
         text: generalPayload,
-        width: 165,
-        height: 165,
-        colorDark: '#00875a',
+        width: 175,
+        height: 175,
+        correctLevel: 1,
+        colorDark: '#065f46',
         colorLight: '#ffffff'
       });
     }
