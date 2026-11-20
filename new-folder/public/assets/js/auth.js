@@ -560,6 +560,7 @@
     // ========================================================================
     const adminForgotForm = document.getElementById('adminForgotPasswordForm');
     if (adminForgotForm) {
+      setupPasswordToggle('toggleAdminRecoveryPasswordBtn', 'recoveryAdminNewPassword', 'eyeAdminRecoveryIcon');
       adminForgotForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -804,6 +805,7 @@
     // ========================================================================
     const forgotForm = document.getElementById('forgotPasswordForm');
     if (forgotForm) {
+      setupPasswordToggle('toggleRecoveryPasswordBtn', 'recoveryNewPassword', 'eyeRecoveryIcon');
       applyDobBounds(document.getElementById('recoveryDob'));
       forgotForm.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -858,7 +860,7 @@
           showToast('Network error while resetting password.', 'error');
         } finally {
           submitBtn.disabled = false;
-          submitBtn.innerText = 'Reset Student Password';
+          submitBtn.innerText = 'Reset Password';
         }
       });
     }
