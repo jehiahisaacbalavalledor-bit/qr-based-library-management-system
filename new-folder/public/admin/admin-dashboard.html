@@ -2879,14 +2879,16 @@
             const res = await fetch(`${engine.API_BASE}staff/manage.php`, { credentials: 'same-origin' });
             const json = await res.json();
             if (json.status !== 'success') return;
-            const roleOpts = ['Head Librarian', 'Circulation Desk Officer', 'Cataloger', 'System Administrator'];
-            tbody.innerHTML = json.data.map(st => `
+            const roleOpts = ['Head Librarian', 'Circulation Desk Officer'];
+            tbody.innerHTML = json.data.map(st => {
+              const rowRoles = roleOpts.includes(st.role) ? roleOpts : [...roleOpts, st.role];
+              return `
               <tr data-staff-id="${Number(st.id)}">
                 <td><strong style="font-family:monospace;">${esc(st.employee_id)}</strong></td>
                 <td><strong>${esc(st.full_name)}</strong><div style="font-size:11px;color:#64748b;">${esc(st.email)}</div></td>
                 <td>
                   <select class="form-control staff-role-sel" style="padding:4px 8px;font-size:12px;background:#fff;">
-                    ${roleOpts.map(ro => `<option value="${esc(ro)}" ${st.role === ro ? 'selected' : ''}>${esc(ro)}</option>`).join('')}
+                    ${rowRoles.map(ro => `<option value="${esc(ro)}" ${st.role === ro ? 'selected' : ''}>${esc(ro)}</option>`).join('')}
                   </select>
                 </td>
                 <td>
@@ -2903,7 +2905,8 @@
                   </div>
                 </td>
               </tr>
-            `).join('');
+            `;
+            }).join('');
 
             tbody.querySelectorAll('.btn-save-staff').forEach(btn => {
               btn.addEventListener('click', async function() {
