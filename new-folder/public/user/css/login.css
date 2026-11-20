@@ -1,0 +1,274 @@
+/* Simple, Clean Student Login Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: #f3f5f8;
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Login & Register Cards */
+.login-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 380px;
+  padding: 32px 28px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.register-card {
+  max-width: 440px;
+}
+
+.page-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 8px;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+}
+
+.hint {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.privacy-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.privacy-box label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.privacy-box input {
+  margin-top: 3px;
+}
+
+/* Header */
+.login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-logo {
+  height: 40px;
+  margin-bottom: 8px;
+}
+
+.campus-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.admin-brand {
+  font-size: 20px;
+  font-weight: 800;
+  color: #00875a;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.admin-brand span {
+  color: #0f172a;
+}
+
+.admin-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0f172a;
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+}
+
+/* Form Fields */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.password-box {
+  position: relative;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.password-box input {
+  padding-right: 40px;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #00875a;
+}
+
+@media (max-width: 480px) {
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.form-group input.is-invalid {
+  border-color: #dc2626;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+}
+
+.toggle-password:hover {
+  color: #475569;
+}
+
+/* Links & Button */
+.forgot-link {
+  text-align: right;
+  margin-top: -8px;
+  margin-bottom: 18px;
+}
+
+.forgot-link a {
+  font-size: 12.5px;
+  color: #00875a;
+  text-decoration: none;
+}
+
+.forgot-link a:hover {
+  text-decoration: underline;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 11px;
+  background-color: #00875a;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-login:hover {
+  background-color: #006e49;
+}
+
+.btn-login:disabled {
+  background-color: #86efac;
+  cursor: not-allowed;
+}
+
+.bottom-links {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.9;
+}
+
+.bottom-links a {
+  color: #00875a;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bottom-links a:hover {
+  text-decoration: underline;
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: #ffffff;
+  border-left: 4px solid #00875a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.toast-error {
+  border-left-color: #dc2626;
+  color: #991b1b;
+}
+
+.toast-success {
+  border-left-color: #16a34a;
+  color: #065f46;
+}

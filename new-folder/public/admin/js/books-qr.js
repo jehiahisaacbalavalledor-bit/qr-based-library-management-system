@@ -231,7 +231,7 @@
 
   document.addEventListener('DOMContentLoaded', async function () {
     if (window.CvsuRouteGuard) {
-      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../admin-index.html', 'cvsu_library_current_admin');
+      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../../index.html', 'cvsu_library_current_admin');
       if (!sessionData) return;
     }
     let books = getBooksCatalog();
@@ -357,7 +357,7 @@
           : `${selectedBooks.length} selected`;
       }
       if (openBtn) {
-        openBtn.textContent = `🖨️ Batch Print Sheet (${labels.length})`;
+        openBtn.textContent = `Batch Print Sheet (${labels.length})`;
       }
       if (sidebarCount) {
         sidebarCount.textContent = String(labels.length);
@@ -807,9 +807,9 @@
     if (booksQrLogoutBtn) {
       booksQrLogoutBtn.addEventListener('click', function () {
         if (window.CvsuRouteGuard) {
-          window.CvsuRouteGuard.logout('../../admin-index.html', 'cvsu_library_current_admin');
+          window.CvsuRouteGuard.logout('../../../index.html', 'cvsu_library_current_admin');
         } else {
-          window.location.href = '../../admin-index.html';
+          window.location.href = '../../../index.html';
         }
       });
     }

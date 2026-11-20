@@ -7,7 +7,6 @@
   'use strict';
 
   const STORAGE_LOGS_KEY = 'cvsu_circulation_scan_logs';
-  const LATEST_BORROW_PASS_KEY = 'cvsu_latest_borrow_pass';
   const STORAGE_USERS_KEY = 'cvsu_library_registered_users';
 
   let videoStream = null;
@@ -856,20 +855,32 @@
   // DOM Loaded
   document.addEventListener('DOMContentLoaded', async function () {
     if (window.CvsuRouteGuard) {
-      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../admin-index.html', 'cvsu_library_current_admin');
+      const sessionData = await window.CvsuRouteGuard.requireSession('admin', '../../../index.html', 'cvsu_library_current_admin');
       if (!sessionData) return;
     }
     const scannerLogoutBtn = document.getElementById('scannerLogoutBtn');
     if (scannerLogoutBtn) {
       scannerLogoutBtn.addEventListener('click', function () {
         if (window.CvsuRouteGuard) {
-          window.CvsuRouteGuard.logout('../../admin-index.html', 'cvsu_library_current_admin');
+          window.CvsuRouteGuard.logout('../../../index.html', 'cvsu_library_current_admin');
         } else {
-          window.location.href = '../../admin-index.html';
+          window.location.href = '../../../index.html';
         }
       });
     }
     renderScanLogsTable();
+
+    const scannerRecordsSection = document.getElementById('scannerRecordsSection');
+    document.querySelectorAll('[data-scanner-tab-btn]').forEach(tabBtn => {
+      tabBtn.addEventListener('click', function () {
+        const targetTab = this.getAttribute('data-scanner-tab-btn') || 'loans';
+        document.querySelectorAll('[data-scanner-tab-btn]').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        if (scannerRecordsSection) {
+          scannerRecordsSection.setAttribute('data-scanner-tab', targetTab);
+        }
+      });
+    });
 
     const simReturnDate = document.getElementById('simReturnDate');
     if (simReturnDate && window.CvsuCirculationEngine) {
@@ -940,100 +951,6 @@
     setTimeout(() => {
       startCameraScanner();
     }, 400);
-
-    // Quick Test Scan 1: Latest Student Borrow Slip (Juan Dela Cruz)
-    const quickScanStudentBtn = document.getElementById('quickScanStudentBtn');
-    if (quickScanStudentBtn) {
-      quickScanStudentBtn.addEventListener('click', function () {
-        const savedPassStr = localStorage.getItem(LATEST_BORROW_PASS_KEY);
-        let sampleData;
-
-        if (savedPassStr) {
-          sampleData = savedPassStr;
-        } else {
-          // Default pre-seeded test borrow slip with unique transaction ref per click
-          const uniqueRef = `BRW-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-          sampleData = JSON.stringify({
-            type: 'CVSU_BORROW',
-            studentNo: '202410001',
-            name: 'Juan C. Dela Cruz',
-            course: 'BS in Information Technology',
-            email: 'juan.delacruz@cvsu.edu.ph',
-            mobile: '09171234567',
-            bookCode: 'BK-CVSU-001',
-            book: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-            callNo: 'QA 76.6 .C67',
-            ref: uniqueRef,
-            borrowDate: new Date().toISOString().split('T')[0],
-            dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
-          });
-        }
-
-        handleScannedCode(sampleData);
-      });
-    }
-
-    // Quick Test Scan 2: Student ID Pass (Maria Santos)
-    const quickScanGeneralIdBtn = document.getElementById('quickScanGeneralIdBtn');
-    if (quickScanGeneralIdBtn) {
-      quickScanGeneralIdBtn.addEventListener('click', function () {
-        const mariaRef = `BRW-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-        const mariaData = JSON.stringify({
-          type: 'CVSU_BORROW',
-          studentNo: '202410002',
-          name: 'Maria Elena R. Santos',
-          course: 'BS Computer Science',
-          email: 'maria.santos@cvsu.edu.ph',
-          mobile: '09189876543',
-          bookCode: 'BK-CVSU-003',
-          book: 'Database System Concepts (7th Edition)',
-          callNo: 'QA 76.9 .D3 S54',
-          ref: mariaRef,
-          borrowDate: new Date().toISOString().split('T')[0],
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]
-        });
-
-        handleScannedCode(mariaData);
-      });
-    }
-
-    // Quick Test Scan 3: Scanned Physical Book QR Sticker
-    const quickScanBookQrBtn = document.getElementById('quickScanBookQrBtn');
-    if (quickScanBookQrBtn) {
-      quickScanBookQrBtn.addEventListener('click', function () {
-        const bookData = JSON.stringify({
-          type: 'CVSU_BOOK_QR',
-          bookCode: 'BK-CVSU-001',
-          accessionNo: 'ACC-2026-00101',
-          callNo: 'QA 76.6 .C67',
-          classification: '005.1',
-          title: 'Clean Code: A Handbook of Agile Software Craftsmanship',
-          author: 'Robert C. Martin',
-          category: 'Computer Science & IT',
-          isRoomUseOnly: 0
-        });
-        handleScannedCode(bookData);
-      });
-    }
-
-    // Quick Test Scan 4: Special Collection Book (Room Use Only)
-    const quickScanSpecialBookBtn = document.getElementById('quickScanSpecialBookBtn');
-    if (quickScanSpecialBookBtn) {
-      quickScanSpecialBookBtn.addEventListener('click', function () {
-        const specialBookData = JSON.stringify({
-          type: 'CVSU_BOOK_QR',
-          bookCode: 'BK-CVSU-006',
-          accessionNo: 'ACC-SPEC-00001',
-          callNo: 'FIL QA 76.2 .C8',
-          classification: '378.599',
-          title: 'CvSU Imus Campus Undergraduate IT Theses Compendium Vol. IV',
-          author: 'CvSU Department of Computer Studies',
-          category: 'Special Collections',
-          isRoomUseOnly: 1
-        });
-        handleScannedCode(specialBookData);
-      });
-    }
 
     // File Upload QR Code Image Reader (Accurate jsQR + BarcodeDetector — zero fake student fallback)
     const qrFileInput = document.getElementById('qrFileInput');
@@ -1201,16 +1118,29 @@
       });
     }
 
-    // Clear Circulation Log Button
+    // Clear Circulation Log Button (In-page confirmation modal)
     const clearLogBtn = document.getElementById('clearLogBtn');
-    if (clearLogBtn) {
-      clearLogBtn.addEventListener('click', function () {
-        if (confirm('Are you sure you want to clear the circulation scans log?')) {
+    const confirmModal = document.getElementById('scannerConfirmModal');
+    const okConfirmBtn = document.getElementById('okScannerConfirmBtn');
+    const cancelConfirmBtn = document.getElementById('cancelScannerConfirmBtn');
+    const closeConfirmBtn = document.getElementById('closeScannerConfirmBtn');
+
+    if (clearLogBtn && confirmModal) {
+      const closeModal = () => confirmModal.classList.remove('active');
+      clearLogBtn.addEventListener('click', () => confirmModal.classList.add('active'));
+      if (cancelConfirmBtn) cancelConfirmBtn.addEventListener('click', closeModal);
+      if (closeConfirmBtn) closeConfirmBtn.addEventListener('click', closeModal);
+      confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) closeModal();
+      });
+      if (okConfirmBtn) {
+        okConfirmBtn.addEventListener('click', function () {
           localStorage.removeItem(STORAGE_LOGS_KEY);
           renderScanLogsTable();
+          closeModal();
           showToast('Circulation logs cleared.', 'info');
-        }
-      });
+        });
+      }
     }
 
     // Hardware USB Scanner Keyboard Listener

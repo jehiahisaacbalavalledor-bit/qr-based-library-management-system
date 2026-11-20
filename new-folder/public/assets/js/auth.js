@@ -107,6 +107,28 @@
     return (str || '').replace(/[\s-]/g, '').trim();
   }
 
+  function getTodayYmd() {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function applyDobBounds(input) {
+    if (!input) return;
+    input.min = '1920-01-01';
+    input.max = getTodayYmd();
+  }
+
+  function isValidDob(dobStr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dobStr || '')) return false;
+    const [y, m, d] = dobStr.split('-').map(Number);
+    if (y < 1920 || dobStr > getTodayYmd()) return false;
+    const dt = new Date(y, m - 1, d);
+    return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+  }
+
   // Toast Notification System
   function showToast(message, type = 'info') {
     const container = document.getElementById('toastContainer');
@@ -215,6 +237,78 @@
         });
       }
 
+      function storeStudentAndRedirect(data, fallbackStudentNo, toastMessage) {
+        const loggedInUser = {
+          id: data.id,
+          studentNumber: data.studentNumber || fallbackStudentNo,
+          fullName: data.fullName || `Student ${fallbackStudentNo}`,
+          email: data.email || `${fallbackStudentNo}@cvsu.edu.ph`,
+          mobile: data.mobile || '',
+          course: data.course || 'BS Information Technology',
+          yearLevel: data.yearLevel || '1st Year',
+          campus: data.campus || 'Imus Campus'
+        };
+        sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(loggedInUser));
+        showToast(toastMessage || 'Sign in successful! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
+        }, 700);
+      }
+
+      function storeAdminAndRedirect(data, rawUsername, toastMessage) {
+        const adminObj = {
+          id: data.id,
+          employeeId: data.employeeId || rawUsername,
+          fullName: data.fullName || 'Library Staff',
+          email: data.email || rawUsername,
+          role: data.role || 'Head Librarian',
+          campus: data.campus || 'Imus Campus'
+        };
+        sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
+        showToast(toastMessage || 'Sign in successful! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
+        }, 700);
+      }
+
+      async function tryRemoteAdminLogin(rawUsername, password) {
+        const apiRes = await fetch(`${PUBLIC_BASE}api/auth/adminLogin.php`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminUsername: rawUsername,
+            adminPassword: password
+          })
+        });
+        if (!apiRes.ok) return null;
+        return apiRes.json();
+      }
+
+      function matchOfflineAdmin(rawUsername, password) {
+        const cleanedUser = cleanStudentNumber(rawUsername).toLowerCase();
+        const admins = getAdmins();
+        const matched = admins.find(a => {
+          const matchId = cleanStudentNumber(a.employeeId).toLowerCase() === cleanedUser;
+          const matchEmail = (a.email || '').toLowerCase() === rawUsername.toLowerCase();
+          return (matchId || matchEmail) && a.password === password;
+        });
+        if (matched) return matched;
+        if (
+          (cleanedUser === 'lib2024001' || rawUsername.toLowerCase() === 'admin@cvsu.edu.ph') &&
+          password === 'AdminPassword123!'
+        ) {
+          return {
+            employeeId: 'LIB-2024-001',
+            fullName: 'Prof. Maria C. Santos',
+            email: 'admin@cvsu.edu.ph',
+            role: 'Head Librarian',
+            campus: 'Imus Campus'
+          };
+        }
+        return null;
+      }
+
       loginForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -241,10 +335,10 @@
         submitBtn.disabled = true;
         submitBtn.innerText = 'Signing In...';
 
-        // Attempt 1: REST API
+        // Attempt 1: REST API (auto-detect Student first, then hidden Staff/Admin fallback)
         if (window.location.protocol !== 'file:') {
           try {
-            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/login.php`, {
+            const stuRes = await fetch(`${PUBLIC_BASE}api/auth/login.php`, {
               method: 'POST',
               credentials: 'same-origin',
               headers: { 'Content-Type': 'application/json' },
@@ -254,194 +348,56 @@
               })
             });
 
-            if (apiRes.ok) {
-              const resData = await apiRes.json();
-              if (resData.status === 'success') {
-                const loggedInUser = {
-                  id: resData.data.id,
-                  studentNumber: resData.data.studentNumber || studentNo,
-                  fullName: resData.data.fullName || `Student ${studentNo}`,
-                  email: resData.data.email || `${studentNo}@cvsu.edu.ph`,
-                  mobile: resData.data.mobile || '',
-                  course: resData.data.course || 'BS Information Technology',
-                  yearLevel: resData.data.yearLevel || '1st Year',
-                  campus: resData.data.campus || 'Imus Campus'
-                };
-                sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(loggedInUser));
-                showToast('API Login verified! Redirecting...', 'success');
-                setTimeout(() => {
-                  window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
-                }, 700);
-                return;
-              } else if (resData.message) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'Sign In';
-                showToast(resData.message, 'error');
-                passInput.classList.add('is-invalid');
-                setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
-                return;
-              }
+            const stuData = stuRes.ok ? await stuRes.json() : null;
+            if (stuData && stuData.status === 'success') {
+              storeStudentAndRedirect(stuData.data, studentNo, 'Sign in successful! Redirecting...');
+              return;
             }
+
+            const admData = await tryRemoteAdminLogin(rawStudentNo, password);
+            if (admData && admData.status === 'success') {
+              storeAdminAndRedirect(admData.data, rawStudentNo, 'Sign in successful! Redirecting...');
+              return;
+            }
+
+            const errMsg = (admData && admData.message && admData.message.toLowerCase().includes('inactive'))
+              ? admData.message
+              : ((stuData && stuData.message && stuData.message.toLowerCase().includes('account is currently'))
+                ? stuData.message
+                : 'Invalid ID / Email or Password. Please try again.');
+
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Sign In';
+            showToast(errMsg, 'error');
+            passInput.classList.add('is-invalid');
+            setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
+            return;
           } catch (apiErr) {
             console.info('Backend API unavailable. Proceeding with client session fallback:', apiErr.message);
           }
         }
 
-        // Attempt 2: Local storage fallback
+        // Attempt 2: Local storage fallback (Student first, then Admin)
         setTimeout(() => {
           const users = getUsers();
           const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.password === password);
 
           if (matchedUser) {
-            sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(matchedUser));
-            showToast('Sign in successful! Redirecting to library portal...', 'success');
-            setTimeout(() => {
-              window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
-            }, 800);
-          } else {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Sign In';
-            showToast('Invalid Student Number or Password. Please try again.', 'error');
-            passInput.classList.add('is-invalid');
-            setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
+            storeStudentAndRedirect(matchedUser, studentNo, 'Sign in successful! Redirecting to library portal...');
+            return;
           }
-        }, 400);
-      });
-    }
 
-    // ========================================================================
-    // ADMIN / LIBRARIAN LOGIN PAGE LOGIC
-    // ========================================================================
-    const adminLoginForm = document.getElementById('adminLoginForm');
-    if (adminLoginForm) {
-      setupPasswordToggle('toggleAdminPasswordBtn', 'adminPassword', 'adminEyeIcon');
-      setupModal('adminSupportLink', 'adminSupportModal', 'closeAdminSupportModal');
-      
-      const closeAdminSupportModalBtn = document.getElementById('closeAdminSupportModalBtn');
-      if (closeAdminSupportModalBtn) {
-        closeAdminSupportModalBtn.addEventListener('click', function () {
-          const modal = document.getElementById('adminSupportModal');
-          if (modal) modal.classList.remove('active');
-        });
-      }
-
-      // Demo autofill for admin
-      const fillAdminDemoBtn = document.getElementById('fillAdminDemoBtn');
-      if (fillAdminDemoBtn) {
-        fillAdminDemoBtn.addEventListener('click', function () {
-          const usernameInput = document.getElementById('adminUsername');
-          const passInput = document.getElementById('adminPassword');
-          if (usernameInput && passInput) {
-            usernameInput.value = 'LIB-2024-001';
-            passInput.value = 'AdminPassword123!';
-            showToast('Demo librarian credentials filled!', 'info');
+          const matchedAdmin = matchOfflineAdmin(rawStudentNo, password);
+          if (matchedAdmin) {
+            storeAdminAndRedirect(matchedAdmin, rawStudentNo, 'Sign in successful! Redirecting...');
+            return;
           }
-        });
-      }
 
-      adminLoginForm.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const usernameInput = document.getElementById('adminUsername');
-        const passInput = document.getElementById('adminPassword');
-        const roleSelect = document.getElementById('adminRole');
-        const submitBtn = document.getElementById('adminSubmitBtn');
-
-        const rawUsername = (usernameInput.value || '').trim();
-        const cleanedUser = cleanStudentNumber(rawUsername).toLowerCase();
-        const password = passInput.value;
-        const selectedRole = roleSelect ? roleSelect.value : 'Head Librarian';
-
-        if (!rawUsername) {
-          showToast('Please enter your Employee ID or Institutional Email.', 'error');
-          usernameInput.focus();
-          return;
-        }
-
-        if (!password) {
-          showToast('Please enter your Admin Password.', 'error');
-          passInput.focus();
-          return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.innerText = 'Authenticating Staff...';
-
-        // Attempt 1: Call Backend REST API (api/adminLogin.php)
-        if (window.location.protocol !== 'file:') {
-          try {
-            const apiRes = await fetch(`${PUBLIC_BASE}api/auth/adminLogin.php`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                adminUsername: rawUsername,
-                adminPassword: password,
-                adminRole: selectedRole
-              })
-            });
-
-            if (apiRes.ok) {
-              const resData = await apiRes.json();
-              if (resData.status === 'success') {
-                const adminObj = {
-                  id: resData.data.id,
-                  employeeId: resData.data.employeeId || rawUsername,
-                  fullName: resData.data.fullName || 'Library Staff',
-                  email: resData.data.email || rawUsername,
-                  role: resData.data.role || selectedRole,
-                  campus: resData.data.campus || 'Imus Campus'
-                };
-                sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
-                showToast(resData.message || 'Staff authenticated via API! Redirecting...', 'success');
-                setTimeout(() => {
-                  window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
-                }, 700);
-                return;
-              } else if (resData.message) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'Sign In to Admin Console';
-                showToast(resData.message, 'error');
-                passInput.classList.add('is-invalid');
-                setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
-                return;
-              }
-            }
-          } catch (apiErr) {
-            console.info('Admin Backend API unavailable. Falling back to local storage session:', apiErr.message);
-          }
-        }
-
-        // Attempt 2: Local storage fallback (file:// standalone execution)
-        setTimeout(() => {
-          const admins = getAdmins();
-          const matchedAdmin = admins.find(a => {
-            const matchId = cleanStudentNumber(a.employeeId).toLowerCase() === cleanedUser;
-            const matchEmail = (a.email || '').toLowerCase() === rawUsername.toLowerCase();
-            return (matchId || matchEmail) && a.password === password;
-          });
-
-          if (matchedAdmin || (cleanedUser === 'lib2024001' && password === 'AdminPassword123!') || (rawUsername.toLowerCase() === 'admin@cvsu.edu.ph' && password === 'AdminPassword123!')) {
-            const adminObj = matchedAdmin || {
-              employeeId: 'LIB-2024-001',
-              fullName: 'Prof. Maria C. Santos',
-              email: 'admin@cvsu.edu.ph',
-              role: selectedRole,
-              campus: 'Imus Campus'
-            };
-
-            sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
-            showToast(`Welcome back, ${adminObj.fullName}! Loading Admin Console...`, 'success');
-
-            setTimeout(() => {
-              window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
-            }, 800);
-          } else {
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Sign In to Admin Console';
-            showToast('Invalid Employee ID/Email or Password. Access denied.', 'error');
-            passInput.classList.add('is-invalid');
-            setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
-          }
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Sign In';
+          showToast('Invalid Student Number or Password. Please try again.', 'error');
+          passInput.classList.add('is-invalid');
+          setTimeout(() => passInput.classList.remove('is-invalid'), 2000);
         }, 400);
       });
     }
@@ -533,7 +489,7 @@
                 if (resData.pendingApproval) {
                   showToast(resData.message || 'Staff registration submitted for Head Librarian approval.', 'success');
                   setTimeout(() => {
-                    window.location.href = `${PUBLIC_BASE}admin/admin-index.html`;
+                    window.location.href = `${PUBLIC_BASE}index.html`;
                   }, 1400);
                   return;
                 }
@@ -635,14 +591,14 @@
             const json = await res.json();
             if (json.status === 'success') {
               showToast(json.message, 'success');
-              setTimeout(() => { window.location.href = `${PUBLIC_BASE}admin/admin-index.html`; }, 1500);
+              setTimeout(() => { window.location.href = `${PUBLIC_BASE}index.html`; }, 1500);
               return;
             }
             showToast(json.message || 'Could not reset password.', 'error');
             return;
           }
           showToast(`Recovery instructions dispatched to ${email}!`, 'success');
-          setTimeout(() => { window.location.href = `${PUBLIC_BASE}admin/admin-index.html`; }, 1500);
+          setTimeout(() => { window.location.href = `${PUBLIC_BASE}index.html`; }, 1500);
         } catch (err) {
           showToast('Network error while resetting password.', 'error');
         } finally {
@@ -660,6 +616,7 @@
       setupPasswordToggle('toggleRegPasswordBtn', 'regPassword', 'eyeRegIcon');
       setupPasswordToggle('toggleRegConfirmPasswordBtn', 'regConfirmPassword', 'eyeRegConfirmIcon');
       setupModal('portalGuideLink', 'portalGuideModal', 'closePortalGuideModal');
+      applyDobBounds(document.getElementById('regDob'));
 
       const fillSampleBtn = document.getElementById('fillSampleRegisterBtn');
       if (fillSampleBtn) {
@@ -725,8 +682,8 @@
           return;
         }
 
-        if (!dob) {
-          showToast('Please specify your Date of Birth.', 'error');
+        if (!isValidDob(dob)) {
+          showToast('Please enter a valid Date of Birth (4-digit year, not in the future).', 'error');
           dobInput.focus();
           return;
         }
@@ -847,6 +804,7 @@
     // ========================================================================
     const forgotForm = document.getElementById('forgotPasswordForm');
     if (forgotForm) {
+      applyDobBounds(document.getElementById('recoveryDob'));
       forgotForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -861,8 +819,8 @@
         const dob = dobInput ? dobInput.value.trim() : '';
         const newPassword = newPwInput ? newPwInput.value : '';
 
-        if (!studentNo || !email || !dob || newPassword.length < 8) {
-          showToast('Fill in Student Number, Email, Date of Birth, and a new password (min 8 chars).', 'error');
+        if (!studentNo || !email || !isValidDob(dob) || newPassword.length < 8) {
+          showToast('Fill in Student Number, Email, valid Date of Birth (4-digit year), and a new password (min 8 chars).', 'error');
           return;
         }
 

@@ -48,6 +48,13 @@ if ($studentNumber === '' || $email === '' || $mobile === '' || $dob === '' || $
     exit;
 }
 
+$dobObj = DateTime::createFromFormat('Y-m-d', $dob);
+if (!$dobObj || $dobObj->format('Y-m-d') !== $dob || $dob < '1920-01-01' || $dob > date('Y-m-d')) {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'Please enter a valid Date of Birth (4-digit year, not in the future).']);
+    exit;
+}
+
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid email address format.']);
