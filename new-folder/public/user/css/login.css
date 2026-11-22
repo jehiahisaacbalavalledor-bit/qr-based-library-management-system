@@ -279,3 +279,67 @@ body {
   border-left-color: #16a34a;
   color: #065f46;
 }
+
+/* Full-Screen Login Loading Overlay */
+.login-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: #f3f5f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.login-loading-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.login-loading-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 340px;
+  padding: 32px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+.login-loading-logo {
+  height: 36px;
+  margin-bottom: 18px;
+}
+
+.login-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 14px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #00875a;
+  border-radius: 50%;
+  animation: cvsuSpin 0.75s linear infinite;
+}
+
+.login-loading-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.login-loading-sub {
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+@keyframes cvsuSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

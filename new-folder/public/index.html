@@ -4,12 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In - Student Portal | Cavite State University - Imus Campus</title>
-  <link rel="stylesheet" href="user/css/login.css">
+  <link rel="stylesheet" href="user/css/login.css?v=3">
   <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
 </head>
 <body>
 
   <div class="toast-container" id="toastContainer"></div>
+
+  <div class="login-loading-overlay" id="loginLoadingOverlay" role="status" aria-live="polite" aria-hidden="true">
+    <div class="login-loading-card">
+      <img src="assets/images/logo.svg" alt="CvSU Library" class="login-loading-logo">
+      <div class="login-spinner" aria-hidden="true"></div>
+      <div class="login-loading-title" id="loadingScreenTitle">Signing you in...</div>
+      <div class="login-loading-sub" id="loadingScreenSubtitle">Preparing your workspace...</div>
+    </div>
+  </div>
 
   <main class="login-card">
     <header class="login-header">
@@ -63,6 +72,6 @@
     </div>
   </main>
 
-  <script src="assets/js/auth.js?v=3"></script>
+  <script src="assets/js/auth.js?v=5"></script>
 </body>
 </html>

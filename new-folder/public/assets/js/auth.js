@@ -237,38 +237,78 @@
         });
       }
 
-      function storeStudentAndRedirect(data, fallbackStudentNo, toastMessage) {
-        const loggedInUser = {
-          id: data.id,
-          studentNumber: data.studentNumber || fallbackStudentNo,
-          fullName: data.fullName || `Student ${fallbackStudentNo}`,
-          email: data.email || `${fallbackStudentNo}@cvsu.edu.ph`,
-          mobile: data.mobile || '',
-          course: data.course || 'BS Information Technology',
-          yearLevel: data.yearLevel || '1st Year',
-          campus: data.campus || 'Imus Campus'
-        };
-        sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(loggedInUser));
-        showToast(toastMessage || 'Sign in successful! Redirecting...', 'success');
-        setTimeout(() => {
-          window.location.href = `${PUBLIC_BASE}user/pages/dashboard.html`;
-        }, 700);
+      function showLoginLoadingScreen(titleText, subtitleText) {
+        const toastContainer = document.getElementById('toastContainer');
+        if (toastContainer) toastContainer.innerHTML = '';
+        const overlay = document.getElementById('loginLoadingOverlay');
+        if (!overlay) return;
+        const titleEl = document.getElementById('loadingScreenTitle');
+        const subEl = document.getElementById('loadingScreenSubtitle');
+        if (titleEl && titleText) titleEl.textContent = titleText;
+        if (subEl && subtitleText) subEl.textContent = subtitleText;
+        overlay.setAttribute('aria-hidden', 'false');
+        overlay.classList.add('active');
       }
 
-      function storeAdminAndRedirect(data, rawUsername, toastMessage) {
-        const adminObj = {
-          id: data.id,
-          employeeId: data.employeeId || rawUsername,
-          fullName: data.fullName || 'Library Staff',
-          email: data.email || rawUsername,
-          role: data.role || 'Head Librarian',
-          campus: data.campus || 'Imus Campus'
-        };
-        sessionStorage.setItem(SESSION_ADMIN_KEY, JSON.stringify(adminObj));
-        showToast(toastMessage || 'Sign in successful! Redirecting...', 'success');
+      function hideLoginLoadingScreen() {
+        const overlay = document.getElementById('loginLoadingOverlay');
+        if (!overlay) return;
+        overlay.classList.remove('active');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+
+      window.addEventListener('pageshow', function () {
+        hideLoginLoadingScreen();
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Sign In';
+        }
+      });
+
+      function completeLoginRedirect(storageKey, payload, targetPath, titleText, subtitleText) {
+        sessionStorage.setItem(storageKey, JSON.stringify(payload));
+        showLoginLoadingScreen(titleText, subtitleText);
         setTimeout(() => {
-          window.location.href = `${PUBLIC_BASE}admin/admin-dashboard.html`;
-        }, 700);
+          window.location.href = `${PUBLIC_BASE}${targetPath}`;
+        }, 600);
+      }
+
+      function storeStudentAndRedirect(data, fallbackStudentNo) {
+        completeLoginRedirect(
+          SESSION_USER_KEY,
+          {
+            id: data.id,
+            studentNumber: data.studentNumber || fallbackStudentNo,
+            fullName: data.fullName || `Student ${fallbackStudentNo}`,
+            email: data.email || `${fallbackStudentNo}@cvsu.edu.ph`,
+            mobile: data.mobile || '',
+            course: data.course || 'BS Information Technology',
+            yearLevel: data.yearLevel || '1st Year',
+            campus: data.campus || 'Imus Campus'
+          },
+          'user/pages/dashboard.html',
+          'Loading Student Portal...',
+          'Preparing your library dashboard.'
+        );
+      }
+
+      function storeAdminAndRedirect(data, rawUsername) {
+        const consoleName = data.role === 'Circulation Desk Officer' ? 'Staff Console' : 'Admin Console';
+        completeLoginRedirect(
+          SESSION_ADMIN_KEY,
+          {
+            id: data.id,
+            employeeId: data.employeeId || rawUsername,
+            fullName: data.fullName || 'Library Staff',
+            email: data.email || rawUsername,
+            role: data.role || 'Head Librarian',
+            campus: data.campus || 'Imus Campus'
+          },
+          'admin/admin-dashboard.html',
+          `Loading ${consoleName}...`,
+          'Preparing your library workspace.'
+        );
       }
 
       async function tryRemoteAdminLogin(rawUsername, password) {
@@ -350,13 +390,13 @@
 
             const stuData = stuRes.ok ? await stuRes.json() : null;
             if (stuData && stuData.status === 'success') {
-              storeStudentAndRedirect(stuData.data, studentNo, 'Sign in successful! Redirecting...');
+              storeStudentAndRedirect(stuData.data, studentNo);
               return;
             }
 
             const admData = await tryRemoteAdminLogin(rawStudentNo, password);
             if (admData && admData.status === 'success') {
-              storeAdminAndRedirect(admData.data, rawStudentNo, 'Sign in successful! Redirecting...');
+              storeAdminAndRedirect(admData.data, rawStudentNo);
               return;
             }
 
@@ -383,13 +423,13 @@
           const matchedUser = users.find(u => cleanStudentNumber(u.studentNumber) === studentNo && u.password === password);
 
           if (matchedUser) {
-            storeStudentAndRedirect(matchedUser, studentNo, 'Sign in successful! Redirecting to library portal...');
+            storeStudentAndRedirect(matchedUser, studentNo);
             return;
           }
 
           const matchedAdmin = matchOfflineAdmin(rawStudentNo, password);
           if (matchedAdmin) {
-            storeAdminAndRedirect(matchedAdmin, rawStudentNo, 'Sign in successful! Redirecting...');
+            storeAdminAndRedirect(matchedAdmin, rawStudentNo);
             return;
           }
 
