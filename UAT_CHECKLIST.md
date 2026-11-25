@@ -36,3 +36,13 @@ Use this quick 10-minute walkthrough to demonstrate and sign off every core modu
 - [ ] **Clearance Certificate:** Click `Clearance` on a student row -> confirm eligibility check and printable Library Clearance Certificate.
 - [ ] **Reservations Queue & Staff Management:** Mark a pending reservation `Ready` / `Fulfill`; update a staff account role/status or click `Reset Pwd` in Head Librarian Staff Management.
 - [ ] **Reports, CSV & Backup/Restore:** Generate a Circulation/Fines report (print or CSV export), download JSON/SQL backup, and verify audit trail logging (`adminAuditTbody`).
+
+
+## 5. Other Additional Features
+- [] **Logs of transactions in admin**
+- [] **search bar of books in admin**
+- [] **YouTube/Video tutorial on login/signup**
+- [] **QR code not changing if clicking on admin**
+- [] **Scanning student info and book info is combined for checkout**
+- [] **Every book must have randomly generated QR from the system which is printable**
+- [] **Registration for books**
